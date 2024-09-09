@@ -58,7 +58,9 @@ def main():
   posterior = (likelihoods*priors)/marginal
   print(posterior)
 
+  print(f" This adds up to: {np.sum(posterior)}, and is therefore a real probability.")
+
   return posterior
 
 if __name__ == "__main__":
-  main()
+  post = main()
