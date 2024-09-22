@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.special import comb
+
 # Perceptron learning rule
 
 # initial parameters and initial line
@@ -35,5 +37,26 @@ def update_step(x, y, w, learning_rate):
 plt.figure(figsize=(16,6))
 #plt.plot ()
 
+# ---
+def capacity(N:int, P:int):
+    sum = 0
+    for i in range(0, N):
+        sum += comb(P-1, i)
+    return 2*sum
 
-# 
+def bound(N:int, P:int):
+    
+    return np.e
+
+def three():
+    """
+    function for running all of exercise 3, getting plots etc
+    can be thought of as "main"
+
+    It should:
+     - for N = 50, and P between 1 and 200,
+     - numerically compute the capacity of C(N,P),
+     - as well as the estimated bound 
+    """
+
+    return
