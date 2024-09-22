@@ -76,4 +76,5 @@ def three():
 
     return
 
-three()
+if __name__ == "__main__":
+    three()
