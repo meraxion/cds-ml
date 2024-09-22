@@ -38,15 +38,14 @@ plt.figure(figsize=(16,6))
 #plt.plot ()
 
 # ---
-def capacity(N:int, P:int):
+def capacity(N:int, P):
     sum = 0
     for i in range(0, N):
         sum += comb(P-1, i)
     return 2*sum
 
 def bound(N:int, P:int):
-    
-    return np.e
+    return (np.e*P/N)**N
 
 def three():
     """
@@ -56,7 +55,25 @@ def three():
     It should:
      - for N = 50, and P between 1 and 200,
      - numerically compute the capacity of C(N,P),
-     - as well as the estimated bound 
+     - as well as the estimated bound,
+     - plot them
     """
 
+    fig = plt.figure(figsize=(10,10))
+
+    Ps = np.linspace(1,200,200)
+    N = 50
+    ys = capacity(N, Ps)
+
+    xs = np.linspace(1, 200, 200)
+    bounds = bound(N, xs)
+
+    plt.plot(Ps, ys, label="Computed")
+    plt.plot(xs, bounds, label="Bound")
+    plt.yscale("log")
+    plt.legend()
+    plt.show()
+
     return
+
+three()
