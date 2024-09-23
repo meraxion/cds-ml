@@ -9,12 +9,11 @@ P = 50
 N = 50
 w = np.zeros(N)
 
-# for i in range(max):
 
 #update step
 
 def update_step(P, N, w, learning_rate=1, max_iter=1000):
-    x = np.random.choice([-1, 1], size=(P, N))
+    x = np.random.choice([0, 1], size=(P, N))
     y = np.random.choice([-1, 1], size=P)
     converged = False
     for _ in range(max_iter):
