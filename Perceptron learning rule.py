@@ -18,11 +18,12 @@ def update_step(P, N, w, learning_rate=1, max_iter=1000):
     y = np.random.choice([-1, 1], size=P)
     converged = False
     for _ in range(max_iter):
+        converged = True
         for i in range(P):
             if y[i]*np.dot(x[i], w) <= 0:
-                w += y[i]*x[i]
-        if y[i]*np.dot(x[i], w) > 0:
-            converged = True
+                w += y[i]*x[i]*learning_rate
+                converged = False
+        if converged:
             break
         
     return converged
@@ -32,7 +33,7 @@ c = update_step(P, N, w)
 print(c)
 
 #b
-Prange = np.arange(10, 200, 20)
+Prange = np.arange(10, 200, 10)
 converged = {}
 
 for P in Prange:
@@ -41,7 +42,41 @@ for P in Prange:
 
 print(converged)
 
-def learning_rulec(P, N, w)
+"""
+Reconstruct the curve C(PN) for N = 50 as a function of P in the following way. For
+ each P construct a number (nruns) of learning problems randomly and compute 1) the
+ fraction of these problems for which the perceptron learning rule converges, 2) the mean
+ and std of the classification error on the training set and 3) the mean and std of the number
+ of iterations until convergence.
+"""
+
+def learning_rulec(P, N, w, nruns=100, max_iter = 1000):
+    x = np.random.choice([-1, 1], size=(P, N))
+    y = np.random.choice([-1, 1], size=P)
+    converged = False
+    # iterations_list = []
+    # another for loop???
+    # iterations = 0
+    for _ in range(max_iter):
+        converged = True
+        for i in range(P):
+            if y[i]*np.dot(x[i], w) <= 0:
+                w += y[i]*x[i]
+                converged = False
+        if converged:
+            # add to amount converged???
+            break
+        # iterations += 1; does not work cause we want it for every time we measure iterations
+    # iterations store in list maybe
+
+
+    # fraction =  amount converged/ nruns
+    # I do not know what they mean with 2) 
+
+    # mean_iterations = np.mean(iterations)
+    return
+N = 50
+P = np.arange(10, 120, 10)
 
 plt.figure(figsize=(16,6))
 #plt.plot ()
