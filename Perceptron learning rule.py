@@ -5,34 +5,43 @@ from scipy.special import comb
 # Perceptron learning rule
 
 # initial parameters and initial line
-# input vectors = {1, 2, 3, 4}
-# corresponding labels = {a, b, b, a}
-
-# sign(w0T*input vectors^mu) = labels0^mu
-# weight vector0 = {0, 0, 0, 0}
-w0 = [0.1, 0.1, 0.1]
+P = 50
+N = 50
+w = np.zeros(N)
 
 # for i in range(max):
 
 #update step
-# weights at w^n-1; new (x^n, y0^n)
-# if y0^n(w^n-1Tx^n) > 0:
-# w[n] = w[n-1]
-# elif y0[n](w[n-1]^T* x[n]) < 0
-# w[n] = w[n-1] + eta*y0[m]*x[n]
-# new w = old w + learning rate*d(1 if in upper, -1 in  lower) 
-# *xvalue corresponding to update)
 
-def update_step(x, y, w, learning_rate):
-    if y*(w @ x) > 0:
-        wnext = w
-    else:
-        wnext = w + learning_rate*y*x
-    
-    return wnext
+def update_step(P, N, w, learning_rate=1, max_iter=1000):
+    x = np.random.choice([-1, 1], size=(P, N))
+    y = np.random.choice([-1, 1], size=P)
+    converged = False
+    for _ in range(max_iter):
+        for i in range(P):
+            if y[i]*np.dot(x[i], w) <= 0:
+                w += y[i]*x[i]
+        if y[i]*np.dot(x[i], w) > 0:
+            converged = True
+            break
+        
+    return converged
 
-#C(N,P) = 
-# PN = P/N
+#a?
+c = update_step(P, N, w)
+print(c)
+
+#b
+Prange = np.arange(10, 200, 20)
+converged = {}
+
+for P in Prange:
+    c = update_step(P, N, w)
+    converged[P] = c
+
+print(converged)
+
+def learning_rulec(P, N, w)
 
 plt.figure(figsize=(16,6))
 #plt.plot ()
