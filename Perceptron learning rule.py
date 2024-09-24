@@ -109,18 +109,26 @@ plt.bar()
 
 # ---
 def capacity(N:int, P):
+    """
+    Computes the capacity of C(N,P) for the specified values of C and N
+    due to numpy optimization, if P is a numpy array, will compute elementwise on the array (I think)
+    """
     sum = 0
     for i in range(0, N):
         sum += comb(P-1, i)
     return 2*sum
 
 def bound(N:int, P:int):
+    """
+    Computes the bound using the function provided in the exercise
+    """
     return (np.e*P/N)**N
 
 def three():
     """
     function for running all of exercise 3, getting plots etc
-    can be thought of as "main"
+    automatically called when running the file as __main__
+
 
     the function:
      - for N = 50, and P between 1 and 200,
@@ -148,13 +156,14 @@ def three():
 
 def eps(N:int, P:int, delta:float = 0.01):
     """
-    expression for epsilon in terms of N, P, and delta, with appropriate default
+    expression for epsilon in terms of N, P, and delta, with appropriate defaults
     """
     return np.sqrt(-8*np.log(delta/(4*bound(N, 2*P)))/P)
 
 def four_a():
     """
     function for running exercise 4a
+    automatically called when running the file as __main__
 
     the function:
      - uses the bound from exercies 3 to approximate m(P)
@@ -166,8 +175,8 @@ def four_a():
     """
     delta = 0.01
     Ns = [10, 20, 30, 40, 50]
-    fin_Ps = []
-    # Compute numerically for N = 10 the dependence of epsilon on P
+    fin_Ps = [] # a list of P-values required for epsilon < 0.1
+    # Compute numerically for N = 10, 20, ..., 50 the dependence of epsilon on P
     for N in Ns:
         P = 1_000
         Ps = []
@@ -178,12 +187,11 @@ def four_a():
             epsilon = eps(N, P, delta)
             epsilons.append(epsilon)
             P += 100
-        
 
         fin_Ps.append(P)
+        # Plotting epsilon as a function of P for each N
         plt.plot(Ps, epsilons, label=f"N = {N}")
     
-
     plt.legend()
     plt.title(r"$\epsilon$ as a function of P, for different values of N, until $\epsilon < 0.1$")
     plt.show()
@@ -196,5 +204,5 @@ def four_a():
     return fin_Ps
 
 if __name__ == "__main__":
-    # three()
+    three()
     four_a()
