@@ -9,8 +9,11 @@ P = 50
 N = 50
 w = np.zeros(N)
 
-
-#update step
+def step(output):
+    if output > 0:
+        return 1
+    else:
+        return -1
 
 def update_step(P, N, w, learning_rate=1, max_iter=1000):
     x = np.random.choice([0, 1], size=(P, N))
@@ -19,7 +22,9 @@ def update_step(P, N, w, learning_rate=1, max_iter=1000):
     for _ in range(max_iter):
         converged = True
         for i in range(P):
-            if y[i]*np.dot(x[i], w) <= 0:
+            output = np.dot(x[i], w)
+            output = step(output)
+            if y[i] != output:
                 w += y[i]*x[i]*learning_rate
                 converged = False
         if converged:
@@ -51,48 +56,55 @@ Reconstruct the curve C(PN) for N = 50 as a function of P in the following way. 
 
 def learning_rulec(P, N, w, nruns=100, max_iter = 1000):
     iterations_list = []
-    # error_list = [] same as with the iterations?
+    error_list = [] 
     amount_converged = 0
     for _ in range(nruns):
-        x = np.random.choice([-1, 1], size=(P, N))
+        x = np.random.choice([0, 1], size=(P, N))
         y = np.random.choice([-1, 1], size=P)
+        z = np.zeros_like(y)
         converged = False
         iterations = 0
         for _ in range(max_iter):
             converged = True
             for i in range(P):
-                if y[i]*np.dot(x[i], w) <= 0:
+                output = y[i]*np.dot(x[i], w)
+                z[i] = output==y[i]
+                if output <= 0:
                     w += y[i]*x[i]
                     converged = False
-                    # this is run when it is not converged so when there is an error right?
-                    # does that mean that here you add 1 everytime?
             iterations += 1 
             if converged:
                 amount_converged += 1
                 break
         iterations_list.append(iterations)
-        # error_list.append(errors)
+        error_list.append(np.sum(z)/iterations)
 
 
     fraction =  amount_converged/ nruns
-    # I do not know what they mean with 2) 
-    # mean_error = np.mean(error_list)
-    # std_error = np.std(error_list)
+    mean_error = np.mean(error_list)
+    std_error = np.std(error_list)
 
     mean_iterations = np.mean(iterations_list)
     std_iterations = np.std(iterations_list)
-    return fraction, mean_iterations, std_iterations #, mean_error, std_error
+    return fraction, mean_iterations, std_iterations , mean_error, std_error
 
 
 N = 50
 P_range = np.arange(10, 120, 10)
 w = np.zeros(N)
 
-# I think here I have to do what @stian said, I somehow have to do this loop for every p value that is in my array?
-for P in P_range:
-    fraction, mean_iterations, std_iterations = learning_rulec(P, N, w) #, mean_error, std_error
+fraction = np.zeros_like(P_range)
+mean_iterations = np.zeros_like(P_range)
+std_iterations = np.zeros_like(P_range)
+mean_error = np.zeros_like(P_range)
+std_error = np.zeros_like(P_range)
 
-plt.figure(figsize=(16,6))
+for P in P_range:
+    fraction[P], mean_iterations[P], std_iterations[P], mean_error[P], std_error[P] = learning_rulec(P, N, w)
+
+print(fraction, mean_iterations, std_iterations, mean_error, std_error)
+
+plt.bar()
 #plt.plot () I am also still struggling with how to plot these results?
 
 # ---
