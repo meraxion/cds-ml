@@ -80,7 +80,7 @@ def learning_rulec(P, N, w, nruns=100, max_iter = 1000):
         error_list.append(np.sum(z)/iterations)
 
 
-    fraction =  amount_converged/ nruns
+    fraction =  amount_converged/nruns
     mean_error = np.mean(error_list)
     std_error = np.std(error_list)
 
@@ -99,7 +99,7 @@ std_iterations = np.zeros_like(P_range)
 mean_error = np.zeros_like(P_range)
 std_error = np.zeros_like(P_range)
 
-for P in P_range:
+for i, P in enumerate(P_range):
     fraction[P], mean_iterations[P], std_iterations[P], mean_error[P], std_error[P] = learning_rulec(P, N, w)
 
 print(fraction, mean_iterations, std_iterations, mean_error, std_error)
@@ -122,7 +122,7 @@ def three():
     function for running all of exercise 3, getting plots etc
     can be thought of as "main"
 
-    It should:
+    the function:
      - for N = 50, and P between 1 and 200,
      - numerically compute the capacity of C(N,P),
      - as well as the estimated bound,
@@ -147,25 +147,54 @@ def three():
     return
 
 def eps(N:int, P:int, delta:float = 0.01):
-
+    """
+    expression for epsilon in terms of N, P, and delta, with appropriate default
+    """
     return np.sqrt(-8*np.log(delta/(4*bound(N, 2*P)))/P)
 
-def four():
+def four_a():
+    """
+    function for running exercise 4a
+
+    the function:
+     - uses the bound from exercies 3 to approximate m(P)
+     - computes for N = 10, 20, ..., 50 the dependence of epsilon on P
+     - keeps track of the number of patterns P required to reach an epsilon < 0.1
+     - plots epsilon as a function of P for the different levels of N
+     - plots the number of patterns P required to reach epsilon < 0.1 for different levels of N
+
+    """
     delta = 0.01
-
+    Ns = [10, 20, 30, 40, 50]
+    fin_Ps = []
     # Compute numerically for N = 10 the dependence of epsilon on P
-    Ps = np.linspace(1,1000, 1000)
-    epsilons = eps(10, Ps)
+    for N in Ns:
+        P = 1_000
+        Ps = []
+        epsilons = []
+        epsilon = 1
+        while epsilon > 0.1:
+            Ps.append(P)
+            epsilon = eps(N, P, delta)
+            epsilons.append(epsilon)
+            P += 100
+        
 
-    plt.plot(Ps, epsilons, label="N = 10")
+        fin_Ps.append(P)
+        plt.plot(Ps, epsilons, label=f"N = {N}")
+    
 
     plt.legend()
-    plt.title(r"$\epsilon$ as a function of P, for different values of N")
+    plt.title(r"$\epsilon$ as a function of P, for different values of N, until $\epsilon < 0.1$")
     plt.show()
 
-
-    return
+    # Plotting the P required to reach eps < 0.1 as a function of N
+    plt.plot(Ns, fin_Ps, "r+")
+    plt.plot(Ns, fin_Ps, "g--")
+    plt.title("The P required to reach $\epsilon < 0.1$, as a function of N")
+    plt.show()
+    return fin_Ps
 
 if __name__ == "__main__":
     # three()
-    four()
+    four_a()
