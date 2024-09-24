@@ -146,5 +146,26 @@ def three():
 
     return
 
+def eps(N:int, P:int, delta:float = 0.01):
+
+    return np.sqrt(-8*np.log(delta/(4*bound(N, 2*P)))/P)
+
+def four():
+    delta = 0.01
+
+    # Compute numerically for N = 10 the dependence of epsilon on P
+    Ps = np.linspace(1,1000, 1000)
+    epsilons = eps(10, Ps)
+
+    plt.plot(Ps, epsilons, label="N = 10")
+
+    plt.legend()
+    plt.title(r"$\epsilon$ as a function of P, for different values of N")
+    plt.show()
+
+
+    return
+
 if __name__ == "__main__":
-    three()
+    # three()
+    four()
