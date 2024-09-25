@@ -210,9 +210,65 @@ def four_a():
     plt.show()
     return fin_Ps
 
+def get_labels_from_X_and_W(X, W):
+    return np.sign(W @ X)
+
+
+def generate_set(P, N, W):
+    X = np.random.choice([-1, 1], size=(N, P))
+    Y = get_labels_from_X_and_W(X, W)
+    return X, np.array(Y)
+
+def get_generalization_error(X_test, Y_test, W):
+    Y_pred = get_labels_from_X_and_W(X_test, W)
+    error = np.where(Y_test != Y_pred)
+    return len(error[0]) / len(Y_test)
+
+def learning_rule_four_b(P, x, y, w, nruns=100, max_iter=1000):
+    amount_converged = 0
+    for _ in range(nruns):
+        z = np.zeros_like(y)
+        iterations = 0
+        for _ in range(max_iter):
+            converged = True
+            for i in range(P):
+                output = y[i] * np.dot(x[i], w)
+                z[i] = output == y[i]
+                if output <= 0:
+                    w += y[i] * x[i]
+                    converged = False
+            iterations += 1
+            if converged:
+                amount_converged += 1
+                break
+    return w
+
+def four_b():
+    P = [10, 50, 100, 500, 1000]
+    N = 10
+    delta = 0.01
+    W_teacher = np.random.randn(N)
+
+    # generate test data
+    X_test, Y_test = generate_set(10000, N, W_teacher)
+    results = []
+    for p in P:
+        # generate train set
+        X_train, Y_train = generate_set(p, N, W_teacher)
+
+        error_list = []
+        for i in range(100):
+            w_student = np.random.randn(N)
+            learning_rule_four_b(p, X_train.T, Y_train, w_student, nruns=100, max_iter=100000)
+            error_list.append(get_generalization_error(X_test, Y_test, w_student))
+
+        epsilon = eps(N, p, delta)
+        print(f'When P = {p}, generalized error : {np.mean(error_list)}, theoretical error = {epsilon}')
+
 if __name__ == "__main__":
     two_a()
     two_b()
     two_c()
     three()
     four_a()
+    four_b()
