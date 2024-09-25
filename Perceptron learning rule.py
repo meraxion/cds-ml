@@ -4,10 +4,7 @@ from scipy.special import comb
 
 # Perceptron learning rule
 
-# initial parameters and initial line
-P = 50
-N = 50
-w = np.zeros(N)
+# --- Exercise 2
 
 def step(output):
     if output > 0:
@@ -33,18 +30,25 @@ def update_step(P, N, w, learning_rate=1, max_iter=1000):
     return converged
 
 #a?
-c = update_step(P, N, w)
-print(c)
+def two_a():
+    P = 50
+    N = 50
+    w = np.zeros(N)
+    c = update_step(P, N, w)
+    print(c)
 
 #b
-Prange = np.arange(10, 200, 10)
-converged = {}
+def two_b():
+    N = 50
+    w = np.zeros(N)
+    Prange = np.arange(10, 200, 10)
+    converged = {}
 
-for P in Prange:
-    c = update_step(P, N, w)
-    converged[P] = c
+    for P in Prange:
+        c = update_step(P, N, w)
+        converged[P] = c
 
-print(converged)
+    print(converged)
 
 """
 Reconstruct the curve C(PN) for N = 50 as a function of P in the following way. For
@@ -63,22 +67,24 @@ def learning_rulec(P, N, w, nruns=100, max_iter = 1000):
         y = np.random.choice([-1, 1], size=P)
         z = np.zeros_like(y)
         converged = False
+        count = 0
+        error = 0
         iterations = 0
         for _ in range(max_iter):
             converged = True
             for i in range(P):
-                output = y[i]*np.dot(x[i], w)
-                z[i] = output==y[i]
-                if output <= 0:
+                count += 1
+                output = np.dot(x[i], w)
+                if y[i]* output <= 0:
                     w += y[i]*x[i]
+                    error += 1
                     converged = False
             iterations += 1 
             if converged:
                 amount_converged += 1
                 break
         iterations_list.append(iterations)
-        error_list.append(np.sum(z)/iterations)
-
+        error_list.append(error/count)
 
     fraction =  amount_converged/nruns
     mean_error = np.mean(error_list)
@@ -88,26 +94,27 @@ def learning_rulec(P, N, w, nruns=100, max_iter = 1000):
     std_iterations = np.std(iterations_list)
     return fraction, mean_iterations, std_iterations , mean_error, std_error
 
+def two_c():
+    N = 50
+    P_range = np.arange(10, 120, 10)
+    w = np.zeros(N)
 
-N = 50
-P_range = np.arange(10, 120, 10)
-w = np.zeros(N)
+    fraction = np.zeros_like(P_range)
+    mean_iterations = np.zeros_like(P_range)
+    std_iterations = np.zeros_like(P_range)
+    mean_error = np.zeros_like(P_range)
+    std_error = np.zeros_like(P_range)
 
-fraction = np.zeros_like(P_range)
-mean_iterations = np.zeros_like(P_range)
-std_iterations = np.zeros_like(P_range)
-mean_error = np.zeros_like(P_range)
-std_error = np.zeros_like(P_range)
+    for i, P in enumerate(P_range):
+        intermediate = learning_rulec(P, N, w)
+        print(f"P = {P}: \n fraction: {intermediate[0]}, \n mean_iterations: {intermediate[1]}, std_iterations: {intermediate[2]} \n mean_error: {intermediate[3]}, std_error: {intermediate[4]}")
 
-for i, P in enumerate(P_range):
-    fraction[P], mean_iterations[P], std_iterations[P], mean_error[P], std_error[P] = learning_rulec(P, N, w)
+        # fraction[i], mean_iterations[i], std_iterations[i], mean_error[i], std_error[i] = learning_rulec(P, N, w)
 
-print(fraction, mean_iterations, std_iterations, mean_error, std_error)
 
-plt.bar()
-#plt.plot () I am also still struggling with how to plot these results?
+  
 
-# ---
+# --- Exercise 3
 def capacity(N:int, P):
     """
     Computes the capacity of C(N,P) for the specified values of C and N
@@ -204,5 +211,8 @@ def four_a():
     return fin_Ps
 
 if __name__ == "__main__":
+    two_a()
+    two_b()
+    two_c()
     three()
     four_a()
