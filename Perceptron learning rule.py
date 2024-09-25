@@ -242,7 +242,6 @@ def learning_rule_four_b(P, x, y, w, nruns=100, max_iter=1000):
                 amount_converged += 1
                 break
     return w
-
 def four_b():
     P = [10, 50, 100, 500, 1000]
     N = 10
@@ -264,7 +263,6 @@ def four_b():
 
         epsilon = eps(N, p, delta)
         print(f'When P = {p}, generalized error : {np.mean(error_list)}, theoretical error = {epsilon}')
-
 if __name__ == "__main__":
     two_a()
     two_b()
