@@ -96,7 +96,7 @@ def learning_rulec(P, N, w, nruns=100, max_iter = 1000):
 
 def two_c():
     N = 50
-    P_range = np.arange(10, 120, 10)
+    P_range = np.arange(10, 130, 10)
     w = np.zeros(N)
 
     fraction = np.zeros_like(P_range)
