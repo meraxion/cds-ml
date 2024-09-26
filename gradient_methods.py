@@ -16,6 +16,12 @@ def cost(output, target):
 
 # gradient
 
+def sigmoid_grad_calc(output, target, data):
+  N = len(output)
+  gradient = np.zeros_like(data)
+  for i, _ in enumerate(data):
+    gradient[i] = 1/N * np.sum((output-target)*data[i])
+
 # Hessian
 
 # --- Gradient Descent
