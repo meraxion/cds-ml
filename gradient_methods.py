@@ -17,7 +17,7 @@ def cost(output, target):
 # probability
 
 def output(weights, data):
-  return expit(np.sum(weights * data, axis=0))
+  return expit(weights.T*data)
 
 # gradient
 
@@ -30,6 +30,19 @@ def sigmoid_grad_calc(output, target, data):
   return gradient
 
 # Hessian
+
+def hessian(data, output):
+  # d = len(data.shape[1])
+  # H = np.zeros((d,d))
+  # for i in range(d):
+  #   for j in range(d):
+  #     H[i,j] = np.sum(data[i,:]*output*(1-output)*data[j,:])
+
+  D = output*(1-output)
+
+  return data@D@data.T
+
+  
 
 # --- Gradient Descent
 
