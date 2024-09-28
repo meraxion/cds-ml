@@ -1,10 +1,7 @@
-<<<<<<< HEAD
-timport numpy as np
-=======
+import numpy as np
 import numpy as np
 from scipy.special import expit
 
->>>>>>> 8ac37d6bf905bcdb4cf8f91ed4d5636fc4b20159
 # --- Problem definition
 """
 consider the the logistic regression problem
