@@ -1,4 +1,4 @@
-import numpy as np
+timport numpy as np
 # --- Problem definition
 """
 consider the the logistic regression problem
