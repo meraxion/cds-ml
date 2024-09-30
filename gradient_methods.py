@@ -36,15 +36,15 @@ def cost(output, target):
 # probability
 
 def output(weights, data):
-  return expit(weights.T*data)
+  return expit(data@weights)
 
 # gradient
 
 def sigmoid_grad_calc(output, target, data):
   N = len(output)
   gradient = np.zeros_like(data[1, :])
-  for i, data_i in enumerate(data):
-    gradient[i] = 1/N * np.sum((output-target[i])*data_i)
+  for i, data_i in enumerate(data.T):
+    gradient[i] = 1/N * np.sum((output-target)*data_i)
 
   return gradient
 
