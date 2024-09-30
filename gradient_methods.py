@@ -23,7 +23,11 @@ X_train_norm = data['X_train_norm']
 Y_train_norm = data['Y_train_norm']
 X_train_raw = data['X_train_raw']
 Y_train_raw = data['Y_train_raw']
-
+split = int(0.8*len(X_train_norm))
+X_train_norm_gd = X_train_norm[:split-1]
+X_train_norm_val = X_train_norm[split:]
+Y_train_norm_gd = Y_train_norm[:split-1]
+Y_train_norm_val = Y_train_norm[split:]
 # Targets
 
 def cost(output, target):
@@ -38,9 +42,9 @@ def output(weights, data):
 
 def sigmoid_grad_calc(output, target, data):
   N = len(output)
-  gradient = np.zeros_like(data)
-  for i, _ in enumerate(data):
-    gradient[i] = 1/N * np.sum((output-target)*data[i])
+  gradient = np.zeros_like(data[1, :])
+  for i, data_i in enumerate(data):
+    gradient[i] = 1/N * np.sum((output-target[i])*data_i)
 
   return gradient
 
@@ -60,23 +64,28 @@ def hessian(data, output):
   
 
 # --- Gradient Descent
-def gradient_descent(grad, val_train, val_test, weights, learning_rate, max_iter):
+def gradient_descent(val_train, val_vali, val_test, weights, learning_rate, max_iter):
   x,y = val_train
-  x_val, y_val = val_test
-  train_errors = np.zeros(len(max_iter))
-  validation_errors = np.zeros(len(max_iter))
+  x_vali, y_vali = val_vali
+  x_test, y_test = val_test
+  train_errors = np.zeros(max_iter)
+  validation_errors = np.zeros(max_iter)
+  test_errors = np.zeros(max_iter)
   for i in range(max_iter):
     weights = update_rule(weights, x, y, learning_rate)
     train_errors[i] = cost(output(weights, x), y)
 
-    validation_errors[i] = cost(output(weights, x_val), y_val)
+    validation_errors[i] = cost(output(weights, x_vali), y_vali)
+    test_errors[i] = cost(output(weights, x_test), y_test)
     stop_check = early_stopping(validation_errors[i], validation_errors[i-1])
     if stop_check:
       break
 
-  final_error = cost(output(weights, x), y)
+  train_errors = train_errors[:i]
+  validation_errors = validation_errors[:i]
+  test_errors = test_errors[:i]
 
-  return
+  return i, weights, train_errors, validation_errors, test_errors
 
 # update rule
 # so in my gradient descent we had multiple gradients, we have one so this is then the one function I think but
@@ -137,4 +146,6 @@ def line_search(train, test, weights, max_iter):
 # --- Stochastic gradient descent
 
 if __name__ == "__main__":
+  weights = np.random.rand(X_train_norm_gd.shape[1])
+  gradient_descent((X_train_norm_gd, Y_train_norm_gd), (X_train_norm_val, Y_train_norm_val), (X_test_norm, Y_test_norm), weights, 0.01, 10000)
   print("hello world")
