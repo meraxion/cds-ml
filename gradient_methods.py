@@ -49,7 +49,6 @@ def check_labels(w, data):
 
 
 # probability
-
 def output(weights, data):
   return expit(data@weights)
 
