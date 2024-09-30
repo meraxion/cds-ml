@@ -1,5 +1,7 @@
 import numpy as np
 from scipy.special import expit
+from scipy.optimize import minimize
+from functools import partial
 
 # --- Problem definition
 """
@@ -96,6 +98,39 @@ def early_stopping(val_error, prev_val_error):
 # --- Newton Method
 
 # --- Line search
+
+# in each iteration compute the gradient at the current value of w: d = sigmoid_grad_calc(output(weights, data), target, data)
+
+# Then find numerically the value of gamma > 0 such that cost(output(weights+gamma*d, data), target) is minimized
+
+# This is a standard one-dimensional optimization problem.
+# either use e.g. scipy.special.minimize, or roll your own implementation
+
+# minimize()
+def line_search(train, test, weights, max_iter):
+  x,y = train
+  x_test, y_test = test
+  train_errors = np.zeros(len(max_iter))
+  # test_errors  = np.zeros(len(max_iter))
+
+  partial_output = partial(output, data = x)
+  partial_cost   = partial(cost, target = y)
+
+  def my_func(w):
+    return partial_cost(partial_output(w))
+
+  for i in range(max_iter):
+    train_errors[i] = cost(output(weights, x), y)
+
+    gamma = minimize(my_func, weights)
+    d = sigmoid_grad_calc(output(weights, data), y, x)
+    weights = weights + gamma*d
+  
+  test_error  = cost(output(weights, x), y)
+
+  return i, weights, train_errors, test_error
+
+
 
 # --- Conjugate gradient descent
 
