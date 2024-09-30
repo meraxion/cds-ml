@@ -39,6 +39,14 @@ def cost(output, target):
   output = np.clip(output, eps, 1 - eps)
   return -np.mean(target * np.log(output) + (1 - target) * np.log(1 - output))
 
+def check_labels(w, data):
+  x, labels = data
+  preds = output(w, x)
+  pred_labels = (preds >= 0.5).astype(int)
+  comparison = pred_labels == labels
+  correct = np.count_nonzero(comparison)
+  return 1- (correct/len(labels))
+
 
 # probability
 
@@ -91,12 +99,17 @@ def gradient_descent(val_train, val_vali, val_test, weights, learning_rate, max_
   train_errors = np.zeros(max_iter)
   validation_errors = np.zeros(max_iter)
   test_errors = np.zeros(max_iter)
+
+  classif_error = np.zeros(max_iter)
   for i in range(max_iter):
     weights = update_rule(weights, x, y, learning_rate)
     train_errors[i] = cost(output(weights, x), y)
 
     validation_errors[i] = cost(output(weights, x_vali), y_vali)
     test_errors[i] = cost(output(weights, x_test), y_test)
+
+    classif_error[i] = check_labels(weights, val_test)
+
     # stop_check = early_stopping(validation_errors[i], validation_errors[i-1])
     # if stop_check:
     #   break
@@ -105,7 +118,7 @@ def gradient_descent(val_train, val_vali, val_test, weights, learning_rate, max_
   validation_errors = validation_errors[:i]
   test_errors = test_errors[:i]
 
-  return i, weights, train_errors, validation_errors, test_errors
+  return i, weights, train_errors, validation_errors, test_errors, classif_error
 
 def gradient_descent_analytics(par):
   i, weights, train_errors, validation_errors, test_errors = par
@@ -196,7 +209,11 @@ def line_search_analytics():
 
 if __name__ == "__main__":
   weights = np.random.rand(X_train_norm_gd.shape[1])
-  idx, weights, train_errors, validation_errors, test_errors = gradient_descent((X_train_norm_gd, Y_train_norm_gd), (X_train_norm_val, Y_train_norm_val), (X_test_norm, Y_test_norm), weights, 0.01, 750)
-  plt.plot(train_errors)
-  plt.plot(test_errors)
+  idx, weights, train_errors, validation_errors, test_errors, classif_error = gradient_descent((X_train_norm_gd, Y_train_norm_gd), (X_train_norm_val, Y_train_norm_val), (X_test_norm, Y_test_norm), weights, 0.01, 500)
+  print(classif_error)
+  # plt.plot(train_errors, label='training error')
+  # plt.plot(test_errors, label="Test Error")
+  plt.plot(classif_error, label="Classification error")
+
+  plt.legend()
   plt.show()
