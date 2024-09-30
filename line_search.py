@@ -7,24 +7,16 @@ from functools import partial
 from gradient_methods import cost, check_labels, output, sigmoid_grad_calc
 
 # Input data
-#to access test data:
-data = np.load('test_data.npz')
-X_test_norm = data['X_test_norm']
-Y_test_norm = data['Y_test_norm']
-X_test_raw = data['X_test_raw']
-Y_test_raw = data['Y_test_raw']
+def load_data():
+  data = np.load('test_data.npz')
+  X_test_norm = data['X_test_norm']
+  labels_test_norm = data['Y_test_norm']
 
-#to access train data:
-data = np.load('train_data.npz')
-X_train_norm = data['X_train_norm']
-Y_train_norm = data['Y_train_norm']
-X_train_raw = data['X_train_raw']
-Y_train_raw = data['Y_train_raw']
-split = int(0.8*len(X_train_norm))
-X_train_norm_gd = X_train_norm[:split-1]
-X_train_norm_val = X_train_norm[split:]
-Y_train_norm_gd = Y_train_norm[:split-1]
-Y_train_norm_val = Y_train_norm[split:]
+  data = np.load('train_data.npz')
+  X_train_norm = data['X_train_norm']
+  labels_train_norm = data['Y_train_norm']
+
+  return X_train_norm, labels_train_norm, X_test_norm, labels_test_norm
 # --- Line search
 
 # in each iteration compute the gradient at the current value of w: d = sigmoid_grad_calc(output(weights, data), target, data)
@@ -38,25 +30,32 @@ Y_train_norm_val = Y_train_norm[split:]
 def line_search(train, test, weights, max_iter):
   x,t = train
   x_test, t_test = test
-  train_errors = np.zeros(len(max_iter))
+  train_errors = np.zeros(max_iter)
   # test_errors  = np.zeros(len(max_iter))
 
-  partial_output = partial(output, data = x)
-  partial_cost   = partial(cost, target = t)
+  # partial_output = partial(output, data = x)
+  # partial_cost   = partial(cost, target = t)
+  # def my_func(w):
+  #   return partial_cost(partial_output(weights=w))
 
-  def my_func(w):
-    return partial_cost(partial_output(w))
+  def my_func(w, xs, ts):
+    return cost(output(w, xs), ts)
 
   for i in range(max_iter):
+    print(f"iteration {i+1}")
     train_errors[i] = cost(output(weights, x), t)
 
-    gamma = minimize(my_func, weights)
-    d = sigmoid_grad_calc(output(weights, data), t, x)
+    print("now starting one-d optimization")
+    res = minimize(my_func, x0=weights, args = (x, t), method="Nelder-Mead", options={"maxiter":1})
+    gamma = res.x
+    print(f"one-d optimization done, gamma found: {res}")
+    d = sigmoid_grad_calc(output(weights, x), t, x)
     weights = weights + gamma*d
   
-  test_error  = cost(output(weights, x), t)
+  test_error  = cost(output(weights, x_test), t_test)
+  class_rate  = check_labels(weights, test)
 
-  return i, weights, train_errors, test_error
+  return i, weights, train_errors, test_error, class_rate
 
 def line_search_analytics():
 
@@ -64,6 +63,11 @@ def line_search_analytics():
 
 def main():
   print("Hello :3")
+  x_train, t_train, x_test, t_test = load_data()
+  weights = np.random.rand(x_train.shape[1])
+  idx, weights, train_errors, test_error, class_rate = line_search((x_train, t_train), (x_test, t_test), weights, 500)
+
+  print(weights)
 
 if __name__ == "__main__":
   main()
