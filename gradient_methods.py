@@ -117,29 +117,31 @@ def early_stopping(val_error, prev_val_error):
 
 # minimize()
 def line_search(train, test, weights, max_iter):
-  x,y = train
-  x_test, y_test = test
+  x,t = train
+  x_test, t_test = test
   train_errors = np.zeros(len(max_iter))
   # test_errors  = np.zeros(len(max_iter))
 
   partial_output = partial(output, data = x)
-  partial_cost   = partial(cost, target = y)
+  partial_cost   = partial(cost, target = t)
 
   def my_func(w):
     return partial_cost(partial_output(w))
 
   for i in range(max_iter):
-    train_errors[i] = cost(output(weights, x), y)
+    train_errors[i] = cost(output(weights, x), t)
 
     gamma = minimize(my_func, weights)
-    d = sigmoid_grad_calc(output(weights, data), y, x)
+    d = sigmoid_grad_calc(output(weights, data), t, x)
     weights = weights + gamma*d
   
-  test_error  = cost(output(weights, x), y)
+  test_error  = cost(output(weights, x), t)
 
   return i, weights, train_errors, test_error
 
+def line_search_analytics():
 
+  return
 
 # --- Conjugate gradient descent
 
