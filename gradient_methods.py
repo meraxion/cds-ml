@@ -1,4 +1,5 @@
 import numpy as np
+from matplotlib import pyplot as plt
 from scipy.special import expit
 from scipy.optimize import minimize
 from functools import partial
@@ -30,8 +31,14 @@ Y_train_norm_gd = Y_train_norm[:split-1]
 Y_train_norm_val = Y_train_norm[split:]
 # Targets
 
+# def cost(output, target):
+#   return -1/len(target)*np.sum(target*np.log(output)+(1-target)*np.log(1-output))
+
 def cost(output, target):
-  return -1/len(target)*np.sum(target*np.log(output)+(1-target)*np.log(1-output))
+  eps = 1e-15  # Small epsilon value
+  output = np.clip(output, eps, 1 - eps)
+  return -np.mean(target * np.log(output) + (1 - target) * np.log(1 - output))
+
 
 # probability
 
@@ -90,9 +97,9 @@ def gradient_descent(val_train, val_vali, val_test, weights, learning_rate, max_
 
     validation_errors[i] = cost(output(weights, x_vali), y_vali)
     test_errors[i] = cost(output(weights, x_test), y_test)
-    stop_check = early_stopping(validation_errors[i], validation_errors[i-1])
-    if stop_check:
-      break
+    # stop_check = early_stopping(validation_errors[i], validation_errors[i-1])
+    # if stop_check:
+    #   break
 
   train_errors = train_errors[:i]
   validation_errors = validation_errors[:i]
@@ -189,5 +196,7 @@ def line_search_analytics():
 
 if __name__ == "__main__":
   weights = np.random.rand(X_train_norm_gd.shape[1])
-  gradient_descent((X_train_norm_gd, Y_train_norm_gd), (X_train_norm_val, Y_train_norm_val), (X_test_norm, Y_test_norm), weights, 0.01, 10000)
-  print("hello world")
+  idx, weights, train_errors, validation_errors, test_errors = gradient_descent((X_train_norm_gd, Y_train_norm_gd), (X_train_norm_val, Y_train_norm_val), (X_test_norm, Y_test_norm), weights, 0.01, 750)
+  plt.plot(train_errors)
+  plt.plot(test_errors)
+  plt.show()
