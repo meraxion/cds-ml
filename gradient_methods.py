@@ -64,6 +64,19 @@ def hessian(data, output):
   
 
 # --- Gradient Descent
+# update rule
+# so in my gradient descent we had multiple gradients, we have one so this is then the one function I think but
+# then we call the rule in a loop right?
+def update_rule(current_weights, data, target, learning_rate):
+  current_output = output(current_weights, data)
+  weight_update = current_weights - learning_rate * sigmoid_grad_calc(current_output, target, data)
+  return weight_update
+
+# early stopping
+def early_stopping(val_error, prev_val_error):
+  return val_error > prev_val_error
+
+# gradient descent
 def gradient_descent(val_train, val_vali, val_test, weights, learning_rate, max_iter):
   x,y = val_train
   x_vali, y_vali = val_vali
@@ -87,22 +100,49 @@ def gradient_descent(val_train, val_vali, val_test, weights, learning_rate, max_
 
   return i, weights, train_errors, validation_errors, test_errors
 
-# update rule
-# so in my gradient descent we had multiple gradients, we have one so this is then the one function I think but
-# then we call the rule in a loop right?
-def update_rule(current_weights, data, target, learning_rate):
-  current_output = output(current_weights, data)
-  weight_update = current_weights - learning_rate * sigmoid_grad_calc(current_output, target, data)
-  return weight_update
+def gradient_descent_analytics(par):
+  i, weights, train_errors, validation_errors, test_errors = par
+  return
 
-# early stopping
-def early_stopping(val_error, prev_val_error):
-  return val_error > prev_val_error
 
 
 # --- Momentum
+def momentum_update_rule(current_weights, data, target, learning_rate, momentum, alpha):
+  current_output = output(current_weights, data)
+  momentum = - learning_rate*sigmoid_grad_calc(current_output, target, data) + alpha*momentum
+  weights = current_weights + momentum
+  return weights, momentum
+
+def gradient_descent_momentum(val_train, val_vali, val_test, weights, learning_rate, max_iter):
+  x,t = val_train
+  x_vali, y_vali = val_vali
+  x_test, y_test = val_test
+  train_errors = np.zeros(max_iter)
+  validation_errors = np.zeros(max_iter)
+  test_errors = np.zeros(max_iter)
+  momentum = np.zeros_like(weights)
+  for i in range(max_iter):
+    weights, momentum[i+1] = momentum_update_rule(weights, x, t, learning_rate, momentum[i], alpha = 0.8)
+    train_errors[i] = cost(output(weights, x), t)
+
+    validation_errors[i] = cost(output(weights, x_vali), y_vali)
+    test_errors[i] = cost(output(weights, x_test), y_test)
+    stop_check = early_stopping(validation_errors[i], validation_errors[i-1])
+    if stop_check:
+      break
+
+  train_errors = train_errors[:i]
+  validation_errors = validation_errors[:i]
+  test_errors = test_errors[:i]
+
+  return i, weights, train_errors, validation_errors, test_errors
+
+def momentum_analytics(par):
+  return
 
 # --- Weight Decay
+def cost_weight_decay():
+  return
 
 # --- Newton Method
 
