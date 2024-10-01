@@ -56,9 +56,7 @@ def output(weights, data):
 
 def sigmoid_grad_calc(output, target, data):
   N = len(output)
-  gradient = np.zeros_like(data[1, :])
-  for i, data_i in enumerate(data.T):
-    gradient[i] = 1/N * np.sum((output-target)*data_i)
+  gradient = ((output - target) @ data) / N
 
   return gradient
 
