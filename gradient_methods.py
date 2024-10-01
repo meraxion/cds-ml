@@ -161,16 +161,19 @@ def gradient_descent_momentum(val_train, val_vali, val_test, weights, learning_r
   validation_errors = np.zeros(max_iter)
   test_errors = np.zeros(max_iter)
   momentum = np.zeros_like(weights)
+  classif_error = np.zeros(max_iter)
+  previous_validation_error = 1000
   for i in range(max_iter):
     weights, momentum[i+1] = momentum_update_rule(weights, x, t, learning_rate, momentum[i], alpha = 0.8)
     train_errors[i] = cost(output(weights, x), t)
 
     validation_errors[i] = cost(output(weights, x_vali), y_vali)
     test_errors[i] = cost(output(weights, x_test), y_test)
-    stop_check = early_stopping(validation_errors[i], validation_errors[i-1])
+    stop_check = early_stopping(validation_errors[i], previous_validation_error)
     classif_error[i] = check_labels(weights, val_test)
     if stop_check:
       break
+    previous_validation_error = validation_errors[i]
 
   train_errors = train_errors[:i]
   validation_errors = validation_errors[:i]
@@ -194,7 +197,7 @@ def momentum_analytics(par):
 
   print(f"Stopped after {i} iterations")
   print(f"E_train: {train_errors[-1]}, E_test: {test_errors[-1]}")
-  print(f"Misclassified train set: {classif_error}") # this is added so now I am unsure also it says train and test
+  print(f"Misclassified train set: {classif_error[-1]}") # this is added so now I am unsure also it says train and test
 
 
   return
@@ -228,7 +231,7 @@ def weight_decay_analytics(par):
 
   print(f"Stopped after {i} iterations")
   print(f"E_train: {train_errors[-1]}, E_test: {test_errors[-1]}")
-  print(f"Misclassified train set: {classif_error}") 
+  print(f"Misclassified train set: {classif_error[-1]}") 
   return
 
 # --- Newton Method
@@ -243,6 +246,5 @@ def weight_decay_analytics(par):
 
 if __name__ == "__main__":
   weights = np.random.rand(X_train_norm_gd.shape[1])
-  idx, weights, train_errors, validation_errors, test_errors, classif_error = gradient_descent((X_train_norm_gd, Y_train_norm_gd), (X_train_norm_val, Y_train_norm_val), (X_test_norm, Y_test_norm), weights, 0.001, 700)
-  experiments_gradient_descent((X_train_norm_gd, Y_train_norm_gd), (X_train_norm_val, Y_train_norm_val), (X_test_norm, Y_test_norm), weights, 500)
-  idx, weights, train_errors, validation_errors, test_errors, classif_error = gradient_descent_momentum((X_train_norm_gd, Y_train_norm_gd), (X_train_norm_val, Y_train_norm_val), (X_test_norm, Y_test_norm), weights, 0.001, 500)
+  experiments_gradient_descent((X_train_norm_gd, Y_train_norm_gd), (X_train_norm_val, Y_train_norm_val), (X_test_norm, Y_test_norm), weights, 1000)
+  #idx, weights, train_errors, validation_errors, test_errors, classif_error = gradient_descent_momentum((X_train_norm_gd, Y_train_norm_gd), (X_train_norm_val, Y_train_norm_val), (X_test_norm, Y_test_norm), weights, 0.001, 100)
