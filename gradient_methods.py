@@ -87,44 +87,45 @@ def update_rule(current_weights, data, target, learning_rate):
   return weight_update
 
 # early stopping
-def early_stopping(val_error, prev_val_error):
-  return val_error > prev_val_error
+def early_stopping(vali_error, prev_vali_error):
+  return vali_error > prev_vali_error
 
 # gradient descent
 def gradient_descent(val_train, val_vali, val_test, weights, learning_rate, max_iter):
   x,y = val_train
   x_vali, y_vali = val_vali
   x_test, y_test = val_test
-  train_errors = np.zeros(max_iter)
+  train_e = np.zeros(max_iter)
   validation_errors = np.zeros(max_iter)
   test_errors = np.zeros(max_iter)
+  previous_validation_error = 1000
 
   classif_error = np.zeros(max_iter)
   for i in range(max_iter):
     weights = update_rule(weights, x, y, learning_rate)
-    train_errors[i] = cost(output(weights, x), y)
+    train_e[i] = cost(output(weights, x), y)
 
     validation_errors[i] = cost(output(weights, x_vali), y_vali)
     test_errors[i] = cost(output(weights, x_test), y_test)
 
     classif_error[i] = check_labels(weights, val_test)
 
-    # stop_check = early_stopping(validation_errors[i], validation_errors[i-1])
-    # if stop_check:
-    #   break
+    stop_check = early_stopping(validation_errors[i], previous_validation_error)
+    if stop_check:
+      break
+    previous_validation_error = validation_errors[i]
 
-  train_errors = train_errors[:i]
+  train_e = train_e[:i]
   validation_errors = validation_errors[:i]
   test_errors = test_errors[:i]
-
-  return i, weights, train_errors, validation_errors, test_errors, classif_error
+  return i, weights, train_e, validation_errors, test_errors, classif_error
 
 def gradient_descent_analytics(par):
   i, weights, train_errors, validation_errors, test_errors, classif_error = par
   plt.figure(figsize=(10,6))
-  plt.plot(i, train_errors, label = "Training error")
-  plt.plot(i, validation_errors, label = "Validation error")
-  plt.plot(i, test_errors, label="Test error")
+  plt.plot(train_errors, label = "Training error")
+  plt.plot(validation_errors, label = "Validation error")
+  plt.plot(test_errors, label="Test error")
   plt.xlabel("Iterations")
   plt.ylabel("Error")
   plt.legend()
@@ -136,6 +137,12 @@ def gradient_descent_analytics(par):
 
 
   return
+
+def experiments_gradient_descent(val_train, val_vali, val_test, weights, max_iter):
+  learning_rates = [1, 0.001, 0.01, 0.1, 0.5]
+  for learning_rate in learning_rates:
+    par = gradient_descent((X_train_norm_gd, Y_train_norm_gd), (X_train_norm_val, Y_train_norm_val), (X_test_norm, Y_test_norm), weights, learning_rate, 500)
+    gradient_descent_analytics(par)
 
 
 
@@ -161,6 +168,7 @@ def gradient_descent_momentum(val_train, val_vali, val_test, weights, learning_r
     validation_errors[i] = cost(output(weights, x_vali), y_vali)
     test_errors[i] = cost(output(weights, x_test), y_test)
     stop_check = early_stopping(validation_errors[i], validation_errors[i-1])
+    classif_error[i] = check_labels(weights, val_test)
     if stop_check:
       break
 
@@ -227,7 +235,7 @@ def weight_decay_analytics(par):
 
 # --- Line search
 
-from line_search import line_search, line_search_analytics
+#from line_search import line_search, line_search_analytics
 
 # --- Conjugate gradient descent
 
@@ -235,11 +243,6 @@ from line_search import line_search, line_search_analytics
 
 if __name__ == "__main__":
   weights = np.random.rand(X_train_norm_gd.shape[1])
-  idx, weights, train_errors, validation_errors, test_errors, classif_error = gradient_descent((X_train_norm_gd, Y_train_norm_gd), (X_train_norm_val, Y_train_norm_val), (X_test_norm, Y_test_norm), weights, 0.01, 500)
-  print(classif_error)
-  # plt.plot(train_errors, label='training error')
-  # plt.plot(test_errors, label="Test Error")
-  plt.plot(classif_error, label="Classification error")
-
-  plt.legend()
-  plt.show()
+  idx, weights, train_errors, validation_errors, test_errors, classif_error = gradient_descent((X_train_norm_gd, Y_train_norm_gd), (X_train_norm_val, Y_train_norm_val), (X_test_norm, Y_test_norm), weights, 0.001, 700)
+  experiments_gradient_descent((X_train_norm_gd, Y_train_norm_gd), (X_train_norm_val, Y_train_norm_val), (X_test_norm, Y_test_norm), weights, 500)
+  idx, weights, train_errors, validation_errors, test_errors, classif_error = gradient_descent_momentum((X_train_norm_gd, Y_train_norm_gd), (X_train_norm_val, Y_train_norm_val), (X_test_norm, Y_test_norm), weights, 0.001, 500)
