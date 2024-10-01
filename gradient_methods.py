@@ -120,7 +120,21 @@ def gradient_descent(val_train, val_vali, val_test, weights, learning_rate, max_
   return i, weights, train_errors, validation_errors, test_errors, classif_error
 
 def gradient_descent_analytics(par):
-  i, weights, train_errors, validation_errors, test_errors = par
+  i, weights, train_errors, validation_errors, test_errors, classif_error = par
+  plt.figure(figsize=(10,6))
+  plt.plot(i, train_errors, label = "Training error")
+  plt.plot(i, validation_errors, label = "Validation error")
+  plt.plot(i, test_errors, label="Test error")
+  plt.xlabel("Iterations")
+  plt.ylabel("Error")
+  plt.legend()
+  plt.show()
+
+  print(f"Stopped after {i} iterations")
+  print(f"E_train: {train_errors[-1]}, E_test: {test_errors[-1]}")
+  print(f"Misclassified train set: {classif_error}") # this is added so now I am unsure also it says train and test
+
+
   return
 
 
@@ -156,11 +170,57 @@ def gradient_descent_momentum(val_train, val_vali, val_test, weights, learning_r
 
   return i, weights, train_errors, validation_errors, test_errors
 
+def momentum_different_rates(val_train, val_vali, val_test, initial_weights, learning_rates, max_iter):
+  return
+
 def momentum_analytics(par):
+  i, weights, train_errors, validation_errors, test_errors, classif_error = par
+  plt.figure(figsize=(10,6))
+  plt.plot(i, train_errors, label = "Training error")
+  plt.plot(i, validation_errors, label = "Validation error")
+  plt.plot(i, test_errors, label="Test error")
+  plt.xlabel("Iterations")
+  plt.ylabel("Error")
+  plt.legend()
+  plt.show()
+
+  print(f"Stopped after {i} iterations")
+  print(f"E_train: {train_errors[-1]}, E_test: {test_errors[-1]}")
+  print(f"Misclassified train set: {classif_error}") # this is added so now I am unsure also it says train and test
+
+
   return
 
 # --- Weight Decay
-def cost_weight_decay():
+def cost_weight_decay(output, target, weights, data, lambda_):
+  eps = 1e-15  # Small epsilon value
+  output = np.clip(output, eps, 1 - eps)
+  cost =  -np.mean(target * np.log(output) + (1 - target) * np.log(1 - output))
+  weight_decay = (lambda_ / (2* data.shape[0])*np.sum(np.square(weights)))
+  return cost + weight_decay
+
+def sigmoid_weight_decay(output, target, data, lambda_, weights):
+  N = len(output)
+  gradient = np.zeros_like(data[1, :])
+  for i, data_i in enumerate(data.T):
+    gradient[i] = 1/N * np.sum((output-target)*data_i) + (lambda_/data.shape[0])*weights[i]
+
+  return gradient
+
+def weight_decay_analytics(par):
+  i, weights, train_errors, validation_errors, test_errors, classif_error = par
+  plt.figure(figsize=(10,6))
+  plt.plot(i, train_errors, label = "Training error")
+  plt.plot(i, validation_errors, label = "Validation error")
+  plt.plot(i, test_errors, label="Test error")
+  plt.xlabel("Iterations")
+  plt.ylabel("Error")
+  plt.legend()
+  plt.show()
+
+  print(f"Stopped after {i} iterations")
+  print(f"E_train: {train_errors[-1]}, E_test: {test_errors[-1]}")
+  print(f"Misclassified train set: {classif_error}") 
   return
 
 # --- Newton Method
