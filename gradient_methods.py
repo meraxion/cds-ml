@@ -153,7 +153,7 @@ def momentum_update_rule(current_weights, data, target, learning_rate, momentum,
   weights = current_weights + momentum
   return weights, momentum
 
-def gradient_descent_momentum(val_train, val_vali, val_test, weights, learning_rate, max_iter):
+def gradient_descent_momentum(val_train, val_vali, val_test, weights, learning_rate, max_iter, alpha):
   x,t = val_train
   x_vali, y_vali = val_vali
   x_test, y_test = val_test
@@ -164,7 +164,7 @@ def gradient_descent_momentum(val_train, val_vali, val_test, weights, learning_r
   classif_error = np.zeros(max_iter)
   previous_validation_error = 1000
   for i in range(max_iter):
-    weights, momentum[i+1] = momentum_update_rule(weights, x, t, learning_rate, momentum[i], alpha = 0.8)
+    weights, momentum[i+1] = momentum_update_rule(weights, x, t, learning_rate, momentum[i], alpha)
     train_errors[i] = cost(output(weights, x), t)
 
     validation_errors[i] = cost(output(weights, x_vali), y_vali)
@@ -180,9 +180,6 @@ def gradient_descent_momentum(val_train, val_vali, val_test, weights, learning_r
   test_errors = test_errors[:i]
 
   return i, weights, train_errors, validation_errors, test_errors
-
-def momentum_different_rates(val_train, val_vali, val_test, initial_weights, learning_rates, max_iter):
-  return
 
 def momentum_analytics(par):
   i, weights, train_errors, validation_errors, test_errors, classif_error = par
@@ -200,6 +197,16 @@ def momentum_analytics(par):
   print(f"Misclassified train set: {classif_error[-1]}") # this is added so now I am unsure also it says train and test
 
 
+  return
+
+
+def expirements_momentum(val_train, val_vali, val_test, initial_weights, learning_rates, max_iter):
+  learning_rates = [0.001, 0.01, 0.1, 0.5]
+  alphas = [0.1, 0.4, 0.6, 0.8]
+  for learning_rate in learning_rates:
+    for alpha in alphas:
+      par = gradient_descent_momentum((X_train_norm_gd, Y_train_norm_gd), (X_train_norm_val, Y_train_norm_val), (X_test_norm, Y_test_norm), weights, learning_rate, 500)
+      momentum_analytics(par)
   return
 
 # --- Weight Decay
@@ -234,6 +241,9 @@ def weight_decay_analytics(par):
   print(f"Misclassified train set: {classif_error[-1]}") 
   return
 
+def experiments_weight_decay(val_train, val_vali, val_test, initial_weights, learning_rates, max_iter):
+  return
+
 # --- Newton Method
 
 # --- Line search
@@ -246,5 +256,6 @@ def weight_decay_analytics(par):
 
 if __name__ == "__main__":
   weights = np.random.rand(X_train_norm_gd.shape[1])
-  experiments_gradient_descent((X_train_norm_gd, Y_train_norm_gd), (X_train_norm_val, Y_train_norm_val), (X_test_norm, Y_test_norm), weights, 1000)
+  experiments_gradient_descent((X_train_norm_gd, Y_train_norm_gd), (X_train_norm_val, Y_train_norm_val), (X_test_norm, Y_test_norm), weights, 50)
+  expirements_momentum((X_train_norm_gd, Y_train_norm_gd), (X_train_norm_val, Y_train_norm_val), (X_test_norm, Y_test_norm), 50)
   #idx, weights, train_errors, validation_errors, test_errors, classif_error = gradient_descent_momentum((X_train_norm_gd, Y_train_norm_gd), (X_train_norm_val, Y_train_norm_val), (X_test_norm, Y_test_norm), weights, 0.001, 100)
