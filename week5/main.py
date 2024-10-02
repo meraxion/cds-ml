@@ -2,6 +2,7 @@ import numpy as np
 from gradient_methods import experiments_gradient_descent, expirements_momentum, experiments_weight_decay
 from line_search import run_line_search
 from SGD import experiments_SGD
+from week5.Newton_method import run_newton_method
 
 # Input data
 #to access test data:
@@ -26,9 +27,10 @@ Y_train_norm_val = Y_train_norm[split:]
 
 if __name__ == "__main__":
   weights = np.random.rand(X_train_norm_gd.shape[1])
-  # experiments_gradient_descent((X_train_norm_gd, Y_train_norm_gd), (X_train_norm_val, Y_train_norm_val), (X_test_norm, Y_test_norm), weights, max_iter=10000)
-  # expirements_momentum((X_train_norm_gd, Y_train_norm_gd), (X_train_norm_val, Y_train_norm_val), (X_test_norm, Y_test_norm), weights, 0.01, max_iter=10000)
+  experiments_gradient_descent((X_train_norm_gd, Y_train_norm_gd), (X_train_norm_val, Y_train_norm_val), (X_test_norm, Y_test_norm), weights, max_iter=10000)
+  expirements_momentum((X_train_norm_gd, Y_train_norm_gd), (X_train_norm_val, Y_train_norm_val), (X_test_norm, Y_test_norm), weights, 0.01, max_iter=10000)
   experiments_weight_decay((X_train_norm_gd, Y_train_norm_gd), (X_train_norm_val, Y_train_norm_val), (X_test_norm, Y_test_norm), weights, 0.1, max_iter=5500, alpha=0.9)
-  # run_line_search()
-  # experiments_SGD((X_train_norm_gd, Y_train_norm_gd), (X_train_norm_val, Y_train_norm_val),
-  #                              (X_test_norm, Y_test_norm), weights, 0.1, 100)
+  run_line_search()
+  experiments_SGD((X_train_norm_gd, Y_train_norm_gd), (X_train_norm_val, Y_train_norm_val),
+                               (X_test_norm, Y_test_norm), weights, 100)
+  run_newton_method((X_train_norm_gd, Y_train_norm_gd), (X_train_norm_val, Y_train_norm_val), (X_test_norm, Y_test_norm), weights, max_iter=10)

@@ -5,47 +5,51 @@ from scipy.optimize import minimize
 from functools import partial
 import time
 
+
+# Input data
+def load_data():
+    data = np.load('test_data.npz')
+    X_test_norm = data['X_test_norm']
+    labels_test_norm = data['Y_test_norm']
+
+    data = np.load('train_data.npz')
+    X_train_norm = data['X_train_norm']
+    labels_train_norm = data['Y_train_norm']
+
+    return X_train_norm, labels_train_norm, X_test_norm, labels_test_norm
+
 def cost(output, target):
-  eps = 1e-15  # Small epsilon value
-  output = np.clip(output, eps, 1 - eps)
-  return -np.mean(target * np.log(output) + (1 - target) * np.log(1 - output))
+    eps = 1e-15  # Small epsilon value
+    output = np.clip(output, eps, 1 - eps)
+    return -np.mean(target * np.log(output) + (1 - target) * np.log(1 - output))
+
 
 def check_labels(w, data):
-  x, labels = data
-  preds = output(w, x)
-  pred_labels = (preds >= 0.5).astype(int)
-  comparison = pred_labels == labels
-  correct = np.count_nonzero(comparison)
-  return 1- (correct/len(labels))
+    x, labels = data
+    preds = sigmoid(w, x)
+    pred_labels = (preds >= 0.5).astype(int)
+    comparison = pred_labels == labels
+    correct = np.count_nonzero(comparison)
+    return (1 - (correct / len(labels))) * 100
+
 
 # probability
-def output(weights, data):
-  return expit(data@weights)
+def sigmoid(weights, data):
+    return expit(data @ weights)
+
 
 # gradient
 
-def sigmoid_grad_calc(output, target, data):
-  N = len(output)
-  gradient = ((output - target) @ data) / N
+def grad_calc(output, target, data):
+    N = len(output)
+    gradient = ((output - target) @ data) / N
 
-  return gradient
+    return gradient
 
-def hessian(data, output):
-  # d = len(data.shape[1])
-  # H = np.zeros((d,d))
-  # for i in range(d):
-  #   for j in range(d):
-  #     H[i,j] = np.sum(data[i,:]*output*(1-output)*data[j,:])
-
-  D = output*(1-output)
-
-  return data@D@data.T
-
-  
 
 # --- Gradient Descent
 # update rule
 def update_rule(current_weights, data, target, learning_rate):
-  current_output = output(current_weights, data)
-  weight_update = current_weights - learning_rate * sigmoid_grad_calc(current_output, target, data)
-  return weight_update
+    current_output = sigmoid(current_weights, data)
+    weight_update = current_weights - learning_rate * grad_calc(current_output, target, data)
+    return weight_update
