@@ -1,6 +1,6 @@
 import numpy as np
 from gradient_methods import experiments_gradient_descent, expirements_momentum, experiments_weight_decay
-from line_search import run_line_search
+from line_search import run_line_search_and_cgd
 from SGD import experiments_SGD
 
 # Input data
@@ -29,6 +29,6 @@ if __name__ == "__main__":
 #   experiments_gradient_descent((X_train_norm_gd, Y_train_norm_gd), (X_train_norm_val, Y_train_norm_val), (X_test_norm, Y_test_norm), weights, max_iter=10000)
 #   expirements_momentum((X_train_norm_gd, Y_train_norm_gd), (X_train_norm_val, Y_train_norm_val), (X_test_norm, Y_test_norm), weights, 0.01, max_iter=10000)
   experiments_weight_decay((X_train_norm_gd, Y_train_norm_gd), (X_train_norm_val, Y_train_norm_val), (X_test_norm, Y_test_norm), weights, 0.01, max_iter=5340, alpha=0.8)
-#   run_line_search()
+#   run_line_search_and_cgd()
 #   experiments_SGD((X_train_norm_gd, Y_train_norm_gd), (X_train_norm_val, Y_train_norm_val),
 #                                (X_test_norm, Y_test_norm), weights, 0.1, 100)

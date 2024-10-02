@@ -148,7 +148,7 @@ def conjugate_gd_analytics(idx, weights, train_errors, test_errors, class_error,
 
   return
 
-def run_line_search():
+def run_line_search_and_cgd():
   x_train, t_train, x_test, t_test = load_data()
   weights = np.random.rand(x_train.shape[1])
 
