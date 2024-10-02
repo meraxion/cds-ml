@@ -5,84 +5,13 @@ from scipy.optimize import minimize
 from functools import partial
 import time
 
+from helpers import cost, check_labels, output, sigmoid_grad_calc, update_rule
+
 # --- Problem definition
 """
 consider the the logistic regression problem
 the model is given in the exercise pdf, and Bishop section 4.3
 """
-
-# Input data
-#to access test data:
-data = np.load('test_data.npz')
-X_test_norm = data['X_test_norm']
-Y_test_norm = data['Y_test_norm']
-X_test_raw = data['X_test_raw']
-Y_test_raw = data['Y_test_raw']
-
-#to access train data:
-data = np.load('train_data.npz')
-X_train_norm = data['X_train_norm']
-Y_train_norm = data['Y_train_norm']
-X_train_raw = data['X_train_raw']
-Y_train_raw = data['Y_train_raw']
-split = int(0.8*len(X_train_norm))
-X_train_norm_gd = X_train_norm[:split-1]
-X_train_norm_val = X_train_norm[split:]
-Y_train_norm_gd = Y_train_norm[:split-1]
-Y_train_norm_val = Y_train_norm[split:]
-# Targets
-
-# def cost(output, target):
-#   return -1/len(target)*np.sum(target*np.log(output)+(1-target)*np.log(1-output))
-
-def cost(output, target):
-  eps = 1e-15  # Small epsilon value
-  output = np.clip(output, eps, 1 - eps)
-  return -np.mean(target * np.log(output) + (1 - target) * np.log(1 - output))
-
-def check_labels(w, data):
-  x, labels = data
-  preds = output(w, x)
-  pred_labels = (preds >= 0.5).astype(int)
-  comparison = pred_labels == labels
-  correct = np.count_nonzero(comparison)
-  return 1- (correct/len(labels))
-
-# probability
-def output(weights, data):
-  return expit(data@weights)
-
-# gradient
-
-def sigmoid_grad_calc(output, target, data):
-  N = len(output)
-  gradient = ((output - target) @ data) / N
-
-  return gradient
-
-# Hessian
-
-def hessian(data, output):
-  # d = len(data.shape[1])
-  # H = np.zeros((d,d))
-  # for i in range(d):
-  #   for j in range(d):
-  #     H[i,j] = np.sum(data[i,:]*output*(1-output)*data[j,:])
-
-  D = output*(1-output)
-
-  return data@D@data.T
-
-  
-
-# --- Gradient Descent
-# update rule
-# so in my gradient descent we had multiple gradients, we have one so this is then the one function I think but
-# then we call the rule in a loop right?
-def update_rule(current_weights, data, target, learning_rate):
-  current_output = output(current_weights, data)
-  weight_update = current_weights - learning_rate * sigmoid_grad_calc(current_output, target, data)
-  return weight_update
 
 # early stopping
 def early_stopping(vali_e, prev_vali_e):
@@ -288,19 +217,4 @@ def experiments_weight_decay(input_train, input_vali, input_test, initial_weight
   print(f"CPU time: {end-start}")
   return
 
-# --- Newton Method
 
-# --- Line search
-
-#from line_search import line_search, line_search_analytics
-
-# --- Conjugate gradient descent
-
-# --- Stochastic gradient descent
-
-if __name__ == "__main__":
-  weights = np.random.rand(X_train_norm_gd.shape[1])
-  experiments_gradient_descent((X_train_norm_gd, Y_train_norm_gd), (X_train_norm_val, Y_train_norm_val), (X_test_norm, Y_test_norm), weights, max_iter=10000)
-  expirements_momentum((X_train_norm_gd, Y_train_norm_gd), (X_train_norm_val, Y_train_norm_val), (X_test_norm, Y_test_norm), weights, 0.01, max_iter=10000)
-  experiments_weight_decay((X_train_norm_gd, Y_train_norm_gd), (X_train_norm_val, Y_train_norm_val), (X_test_norm, Y_test_norm), weights, 0.01, max_iter=10000, alpha=0.8)
-  #idx, weights, train_e, validation_e, test_e, classif_error = gradient_descent_momentum((X_train_norm_gd, Y_train_norm_gd), (X_train_norm_val, Y_train_norm_val), (X_test_norm, Y_test_norm), weights, 0.001, 100)

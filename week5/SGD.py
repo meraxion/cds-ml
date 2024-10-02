@@ -4,7 +4,7 @@ from scipy.special import expit
 from scipy.optimize import minimize
 from functools import partial
 
-from gradient_methods import update_rule, cost, check_labels
+from helpers import update_rule, cost, check_labels
 
 
 def sigmoid_grad_calc(output, target, data):
@@ -56,30 +56,37 @@ def SGD(train, val, test, weights, learning_rate, max_iter):
   return i, weights, train_e, validation_errors, test_errors, classif_error
 
 
-if __name__ == "__main__":
-  # Input data
-  #to access test data:
-  data = np.load('test_data.npz')
-  X_test_norm = data['X_test_norm']
-  Y_test_norm = data['Y_test_norm']
-  X_test_raw = data['X_test_raw']
-  Y_test_raw = data['Y_test_raw']
 
-  #to access train data:
-  data = np.load('train_data.npz')
-  X_train_norm = data['X_train_norm']
-  Y_train_norm = data['Y_train_norm']
-  X_train_raw = data['X_train_raw']
-  Y_train_raw = data['Y_train_raw']
-  split = int(0.8*len(X_train_norm))
-  X_train_norm_gd = X_train_norm[:split-1]
-  X_train_norm_val = X_train_norm[split:]
-  Y_train_norm_gd = Y_train_norm[:split-1]
-  Y_train_norm_val = Y_train_norm[split:]
-
-  weights = np.random.rand(X_train_norm_gd.shape[1])
-  idx, weights, train_errors, validation_errors, test_errors, classif_error = SGD((X_train_norm_gd, Y_train_norm_gd), (X_train_norm_val, Y_train_norm_val),
-                               (X_test_norm, Y_test_norm), weights, 0.1, 100)
+def experiments_SGD(train, val, test, weights, learning_rate, max_iter):
+  idx, weights, train_errors, validation_errors, test_errors, classif_error = SGD(train, val, test, weights, learning_rate, max_iter)
 
   plt.plot(classif_error)
-  plt.show()
+
+  
+# if __name__ == "__main__":
+#   # Input data
+#   #to access test data:
+#   data = np.load('test_data.npz')
+#   X_test_norm = data['X_test_norm']
+#   Y_test_norm = data['Y_test_norm']
+#   X_test_raw = data['X_test_raw']
+#   Y_test_raw = data['Y_test_raw']
+
+#   #to access train data:
+#   data = np.load('train_data.npz')
+#   X_train_norm = data['X_train_norm']
+#   Y_train_norm = data['Y_train_norm']
+#   X_train_raw = data['X_train_raw']
+#   Y_train_raw = data['Y_train_raw']
+#   split = int(0.8*len(X_train_norm))
+#   X_train_norm_gd = X_train_norm[:split-1]
+#   X_train_norm_val = X_train_norm[split:]
+#   Y_train_norm_gd = Y_train_norm[:split-1]
+#   Y_train_norm_val = Y_train_norm[split:]
+
+#   weights = np.random.rand(X_train_norm_gd.shape[1])
+#   idx, weights, train_errors, validation_errors, test_errors, classif_error = SGD((X_train_norm_gd, Y_train_norm_gd), (X_train_norm_val, Y_train_norm_val),
+#                                (X_test_norm, Y_test_norm), weights, 0.1, 100)
+
+#   plt.plot(classif_error)
+#   plt.show()

@@ -5,7 +5,7 @@ from scipy.optimize import minimize, minimize_scalar
 from functools import partial
 import time
 
-from gradient_methods import cost, check_labels, output, sigmoid_grad_calc
+from helpers import cost, check_labels, output, sigmoid_grad_calc
 
 # Input data
 def load_data():
@@ -103,7 +103,6 @@ def conjugate_gradient_descent(train, test, weights, max_iter):
     return cost(output(w+gam*d, xs), ts)
   
   for i in range(1, max_iter+1):
-    print(f"iteration {i}")
     train_errors[i-1] = cost(output(weights, x), t)
     test_errors[i-1]  = cost(output(weights, x_test), t_test)
 
@@ -149,7 +148,7 @@ def conjugate_gd_analytics(idx, weights, train_errors, test_errors, class_error,
 
   return
 
-def main():
+def run_line_search():
   x_train, t_train, x_test, t_test = load_data()
   weights = np.random.rand(x_train.shape[1])
 
@@ -167,5 +166,3 @@ def main():
   elapsed = end-start
   conjugate_gd_analytics(idx, weights, train_errors, test_errors, class_error, elapsed)
 
-if __name__ == "__main__":
-  main()
