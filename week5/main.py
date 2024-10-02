@@ -26,9 +26,9 @@ Y_train_norm_val = Y_train_norm[split:]
 
 if __name__ == "__main__":
   weights = np.random.rand(X_train_norm_gd.shape[1])
-  experiments_gradient_descent((X_train_norm_gd, Y_train_norm_gd), (X_train_norm_val, Y_train_norm_val), (X_test_norm, Y_test_norm), weights, max_iter=10000)
-  expirements_momentum((X_train_norm_gd, Y_train_norm_gd), (X_train_norm_val, Y_train_norm_val), (X_test_norm, Y_test_norm), weights, 0.01, max_iter=10000)
-  experiments_weight_decay((X_train_norm_gd, Y_train_norm_gd), (X_train_norm_val, Y_train_norm_val), (X_test_norm, Y_test_norm), weights, 0.01, max_iter=10000, alpha=0.8)
-  run_line_search()
-  experiments_SGD((X_train_norm_gd, Y_train_norm_gd), (X_train_norm_val, Y_train_norm_val),
-                               (X_test_norm, Y_test_norm), weights, 0.1, 100)
+#   experiments_gradient_descent((X_train_norm_gd, Y_train_norm_gd), (X_train_norm_val, Y_train_norm_val), (X_test_norm, Y_test_norm), weights, max_iter=10000)
+#   expirements_momentum((X_train_norm_gd, Y_train_norm_gd), (X_train_norm_val, Y_train_norm_val), (X_test_norm, Y_test_norm), weights, 0.01, max_iter=10000)
+  experiments_weight_decay((X_train_norm_gd, Y_train_norm_gd), (X_train_norm_val, Y_train_norm_val), (X_test_norm, Y_test_norm), weights, 0.01, max_iter=5340, alpha=0.8)
+#   run_line_search()
+#   experiments_SGD((X_train_norm_gd, Y_train_norm_gd), (X_train_norm_val, Y_train_norm_val),
+#                                (X_test_norm, Y_test_norm), weights, 0.1, 100)
