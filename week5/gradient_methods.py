@@ -26,6 +26,8 @@ def gradient_descent(input_train, input_vali, input_test, weights, learning_rate
   validation_e = np.zeros(max_iter)
   test_e = np.zeros(max_iter)
   previous_validation_error = 1000
+
+  classif_error = np.zeros(max_iter)
   for i in range(max_iter):
     weights = update_rule(weights, x, y, learning_rate)
     train_e[i] = cost(output(weights, x), y)
@@ -33,23 +35,20 @@ def gradient_descent(input_train, input_vali, input_test, weights, learning_rate
     validation_e[i] = cost(output(weights, x_vali), t_vali)
     test_e[i] = cost(output(weights, x_test), t_test)
 
-    
+    classif_error[i] = check_labels(weights, input_test)
 
     stop_check = early_stopping(validation_e[i], previous_validation_error)
     if stop_check:
       break
     previous_validation_error = validation_e[i]
 
-  classif_error_train = check_labels(weights, input_train)
-  classif_error_test = check_labels(weights, input_test)
-
   train_e = train_e[:i]
   validation_e = validation_e[:i]
   test_e = test_e[:i]
-  return i, weights, train_e, validation_e, test_e, classif_error_train, classif_error_test
+  return i, weights, train_e, validation_e, test_e, classif_error
 
 def gradient_descent_analytics(par, learning_rate):
-  i, weights, train_e, validation_e, test_e, classif_error_train, classif_error_test = par
+  i, weights, train_e, validation_e, test_e, classif_error = par
   plt.figure(figsize=(10,6))
   plt.plot(train_e, label = "Training error")
   plt.plot(validation_e, label = "Validation error")
@@ -62,7 +61,7 @@ def gradient_descent_analytics(par, learning_rate):
 
   print(f"Stopped after {i} iterations")
   print(f"E_train: {train_e[-1]}, E_test: {test_e[-1]}")
-  print(f"Misclassified train set: {classif_error_train}\n Misclassified test set: {classif_error_test}") # this is added so now I am unsure also it says train and test
+  print(f"Misclassified train set: {classif_error[-1]}") # this is added so now I am unsure also it says train and test
 
 
   return
@@ -93,6 +92,7 @@ def gradient_descent_momentum(input_train, input_vali, input_test, weights, lear
   validation_e = np.zeros(max_iter)
   test_e = np.zeros(max_iter)
   momentum = np.zeros_like(weights)
+  classif_error = np.zeros(max_iter)
   previous_validation_error = 1000
   for i in range(max_iter):
     weights, momentum = momentum_update_rule(weights, x, t, learning_rate, momentum, alpha)
@@ -101,21 +101,19 @@ def gradient_descent_momentum(input_train, input_vali, input_test, weights, lear
     validation_e[i] = cost(output(weights, x_vali), t_vali)
     test_e[i] = cost(output(weights, x_test), t_test)
     stop_check = early_stopping(validation_e[i], previous_validation_error)
+    classif_error[i] = check_labels(weights, input_test)
     if stop_check:
       break
     previous_validation_error = validation_e[i]
-
-  classif_error_train = check_labels(weights, input_train)
-  classif_error_test = check_labels(weights, input_test)
 
   train_e = train_e[:i]
   validation_e = validation_e[:i]
   test_e = test_e[:i]
 
-  return i, weights, train_e, validation_e, test_e, classif_error_train, classif_error_test
+  return i, weights, train_e, validation_e, test_e, classif_error
 
 def momentum_analytics(par, learning_rate, alpha):
-  i, weights, train_e, validation_e, test_e, classif_error_train, classif_error_test = par
+  i, weights, train_e, validation_e, test_e, classif_error = par
   plt.figure(figsize=(10,6))
   plt.plot(train_e, label = "Training error")
   plt.plot(validation_e, label = "Validation error")
@@ -128,7 +126,7 @@ def momentum_analytics(par, learning_rate, alpha):
 
   print(f"Stopped after {i} iterations")
   print(f"E_train: {train_e[-1]}, E_test: {test_e[-1]}")
-  print(f"Misclassified train set: {classif_error_train}\n Misclassified test set: {classif_error_test}") # this is added so now I am unsure also it says train and test
+  print(f"Misclassified train set: {classif_error[-1]}") # this is added so now I am unsure also it says train and test
 
 
   return
@@ -136,7 +134,7 @@ def momentum_analytics(par, learning_rate, alpha):
 
 def expirements_momentum(input_train, input_vali, input_test, initial_weights, learning_rates, max_iter):
   learning_rates = [0.001, 0.01, 0.1, 0.5]
-  alphas = [0.1, 0.4, 0.6, 0.8]
+  alphas = [0.8, 0.9, 1]
   for learning_rate in learning_rates:
     for alpha in alphas:
       start = time.time()
@@ -173,6 +171,7 @@ def gradient_descent_weight_decay(input_train, input_vali, input_test, weights, 
   validation_e = np.zeros(max_iter)
   test_e = np.zeros(max_iter)
   momentum = np.zeros_like(weights)
+  classif_error = np.zeros(max_iter)
   previous_validation_error = 1000
   for i in range(max_iter):
     weights, momentum = decay_update_rule(weights, x, t, learning_rate, momentum, alpha, lambda_)
@@ -181,21 +180,19 @@ def gradient_descent_weight_decay(input_train, input_vali, input_test, weights, 
     validation_e[i] = cost_weight_decay(output(weights, x_vali), t_vali, weights, x_vali, lambda_)
     test_e[i] = cost_weight_decay(output(weights, x_test), t_test, weights, x_test, lambda_)
     stop_check = early_stopping(validation_e[i], previous_validation_error)
+    classif_error[i] = check_labels(weights, input_test)
     if stop_check:
       break
     previous_validation_error = validation_e[i]
-
-  classif_error_train = check_labels(weights, input_train)
-  classif_error_test = check_labels(weights, input_test)
 
   train_e = train_e[:i]
   validation_e = validation_e[:i]
   test_e = test_e[:i]
 
-  return i, weights, train_e, validation_e, test_e, classif_error_train, classif_error_test
+  return i, weights, train_e, validation_e, test_e, classif_error
 
 def weight_decay_analytics(par, lambda_):
-  i, weights, train_e, validation_e, test_e, classif_error_train, classif_error_test = par
+  i, weights, train_e, validation_e, test_e, classif_error = par
   plt.figure(figsize=(10,6))
   plt.plot(train_e, label = "Training error")
   plt.plot(validation_e, label = "Validation error")
@@ -208,7 +205,7 @@ def weight_decay_analytics(par, lambda_):
 
   print(f"Stopped after {i} iterations")
   print(f"E_train: {train_e[-1]}, E_test: {test_e[-1]}")
-  print(f"Misclassified train set: {classif_error_train}\n Misclassified test set: {classif_error_test}")
+  print(f"Misclassified train set: {classif_error[-1]}")
   return
 
 def experiments_weight_decay(input_train, input_vali, input_test, initial_weights, learning_rate, max_iter, alpha):

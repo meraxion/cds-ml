@@ -148,7 +148,7 @@ def conjugate_gd_analytics(idx, weights, train_errors, test_errors, class_error,
 
   return
 
-def run_line_search_and_cgd():
+def run_line_search():
   x_train, t_train, x_test, t_test = load_data()
   weights = np.random.rand(x_train.shape[1])
 
@@ -166,5 +166,3 @@ def run_line_search_and_cgd():
   elapsed = end-start
   conjugate_gd_analytics(idx, weights, train_errors, test_errors, class_error, elapsed)
 
-if __name__ == "__main__":
-  run_line_search_and_cgd()

@@ -3,7 +3,8 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 from week5.SGD import sigmoid
-from week5.gradient_methods import output, sigmoid_grad_calc, cost, check_labels
+from week5.gradient_methods import output, sigmoid_grad_calc, cost, check_labels, sigmoid_weight_decay
+
 
 def sigmoid_grad_calc(output, target, data):
   N = len(output)
@@ -27,11 +28,11 @@ def invert_hessian(hessian):
   return hessian_inv
 
 
-def update_rule_Newton(current_weights, data, target, learning_rate):
+def update_rule_Newton(current_weights, data, target, lambda_):
   current_output = output(current_weights, data)
   hessian = calc_hessian(current_output, data)
   hessian_inverted = invert_hessian(hessian)
-  weight_update = current_weights - hessian_inverted @ sigmoid_grad_calc(current_output, target, data)
+  weight_update = current_weights - hessian_inverted @ sigmoid_weight_decay(current_output, target, data, lambda_, weights)
   return weight_update
 
 def Newton_method(train, val, test, weights, learning_rate, max_iter):
@@ -42,10 +43,11 @@ def Newton_method(train, val, test, weights, learning_rate, max_iter):
   validation_errors = np.zeros(max_iter)
   test_errors = np.zeros(max_iter)
   previous_validation_error = 1000
+  lambda_ = 0.1
 
   classif_error = np.zeros(max_iter)
   for i in range(max_iter):
-    weights = update_rule_Newton(weights, x, labels, learning_rate)
+    weights = update_rule_Newton(weights, x, labels, lambda_)
     train_e[i] = cost(sigmoid(weights, x), labels)
 
     validation_errors[i] = cost(sigmoid(weights, x_vali), y_vali)
