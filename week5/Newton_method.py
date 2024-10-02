@@ -4,9 +4,9 @@ import time
 import numpy as np
 from matplotlib import pyplot as plt
 
-from week5.SGD import sigmoid
-from week5.gradient_methods import sigmoid, grad_calc, cost, check_labels, sigmoid_weight_decay
-from week5.helpers import load_data
+from SGD import sigmoid
+from gradient_methods import sigmoid, grad_calc, cost, check_labels, sigmoid_weight_decay
+from helpers import load_data
 
 
 def calc_hessian(output, data):

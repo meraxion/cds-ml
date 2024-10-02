@@ -2,7 +2,7 @@ import numpy as np
 from gradient_methods import experiments_gradient_descent, expirements_momentum, experiments_weight_decay
 from line_search import run_line_search
 from SGD import experiments_SGD
-from week5.Newton_method import run_newton_method
+from Newton_method import run_newton_method
 
 # Input data
 #to access test data:
