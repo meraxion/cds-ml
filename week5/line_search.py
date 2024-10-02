@@ -166,3 +166,5 @@ def run_line_search_and_cgd():
   elapsed = end-start
   conjugate_gd_analytics(idx, weights, train_errors, test_errors, class_error, elapsed)
 
+if __name__ == "__main__":
+  run_line_search_and_cgd()
