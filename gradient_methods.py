@@ -48,7 +48,6 @@ def check_labels(w, data):
   correct = np.count_nonzero(comparison)
   return 1- (correct/len(labels))
 
-
 # probability
 def output(weights, data):
   return expit(data@weights)
