@@ -69,6 +69,7 @@ def experiments_SGD(train, val, test, weights, max_iter):
     learning_rates = [0.5, 0.1, 0.01]
     for batch_size in batch_sizes:
         for learning_rate in learning_rates:
+            weights = np.random.rand(train[0].shape[1])
             start = time.time()
             idx, weights, train_errors, validation_errors, test_errors = SGD(train, val, test, weights, learning_rate, max_iter, batch_size)
             print()

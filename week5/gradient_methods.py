@@ -66,7 +66,7 @@ def gradient_descent_analytics(par, learning_rate):
     print(f"Gradient Descent Analytics:")
     print(f"Stopped after {i} iterations")
     print(f"E_train: {train_e[-1]:.5f}, E_test: {test_e[-1]:.5f}")
-    print(f"Misclassified test set: {classif_error[-1]:.2f}")  # this is added so now I am unsure also it says train and test
+    print(f"Misclassified test set: {classif_error[-1]:.2f}%")  # this is added so now I am unsure also it says train and test
 
     return
 
@@ -135,7 +135,7 @@ def momentum_analytics(par, learning_rate, alpha):
     print(f"Gradient Descent with Momentum Analytics:")
     print(f"Stopped after {i} iterations")
     print(f"E_train: {train_e[-1]:.5f}, E_test: {test_e[-1]:.5f}")
-    print(f"Misclassified test set: {classif_error[-1]:.2f}")  # this is added so now I am unsure also it says train and test
+    print(f"Misclassified test set: {classif_error[-1]:.2f}%")  # this is added so now I am unsure also it says train and test
 
     return
 
@@ -224,7 +224,7 @@ def weight_decay_analytics(par, lambda_):
     print(f"Gradient Descent with Weight Decay Analytics:")
     print(f"Stopped after {i} iterations")
     print(f"E_train: {train_e[-1]:.5f}, E_test: {test_e[-1]:.5f}")
-    print(f"Misclassified train set: {classif_error[-1]:.2f}")
+    print(f"Misclassified train set: {classif_error[-1]:.2f}%")
     return
 
 

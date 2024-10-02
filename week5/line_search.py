@@ -138,8 +138,23 @@ def conjugate_gd_analytics(idx, weights, train_errors, test_errors, class_error,
 
     return
 
+def run_line_search(train, test, weights, max_iter):
+    start = time.time()
+    idx, weights, train_errors, test_errors, class_error = line_search(train, test, weights, max_iter)
+    end = time.time()
+    elapsed = end - start
+    line_search_analytics(idx, weights, train_errors, test_errors, class_error, elapsed)
 
-def run_line_search():
+def run_conjugate_gradient_descent(train, test, weights, max_iter):
+    start = time.time()
+    idx, weights, train_errors, test_errors, class_error = conjugate_gradient_descent(train, test, weights, max_iter)
+    end = time.time()
+    elapsed = end - start
+    conjugate_gd_analytics(idx, weights, train_errors, test_errors, class_error, elapsed)
+
+
+
+if __name__ == "__main__":
     x_train, t_train, x_test, t_test = load_data()
     weights = np.random.rand(x_train.shape[1])
 
@@ -152,9 +167,9 @@ def run_line_search():
     line_search_analytics(idx, weights, train_errors, test_errors, class_error, elapsed)
 
     # Conjugate Gradient Descent
+    weights = np.random.rand(x_train.shape[1])
     start = time.time()
-    idx, weights, train_errors, test_errors, class_error = conjugate_gradient_descent((x_train, t_train),
-                                                                                      (x_test, t_test), weights, 100)
+    idx, weights, train_errors, test_errors, class_error = conjugate_gradient_descent((x_train, t_train), (x_test, t_test), weights, 100)
     end = time.time()
     elapsed = end - start
     conjugate_gd_analytics(idx, weights, train_errors, test_errors, class_error, elapsed)
