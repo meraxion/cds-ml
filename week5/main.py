@@ -4,6 +4,22 @@ from line_search import run_line_search, run_conjugate_gradient_descent
 from SGD import experiments_SGD
 from Newton_method import run_newton_method
 
+"""
+Gradient methods mini-package file structure:
+- main.py; loads the data, initializes weights, and runs each of the gradient methods
+- helpers.py; includes the definitions of functions describing the problem (logistic regression), its gradient, cost, etc.
+- MNIST_loader.py; loads the mnist data set
+- test_data.npz; mnist test data
+- train_data.npz; mnist training data
+- gradient_methods.py; implements basic gradient descent, gd with momentum, and gd with weight decay
+- line_search.py; implements line search, and conjugate gradient descent
+- SGD.py; implements stochastic gradient descent
+- Newton_method.py; implements Newton's method
+- results.ipynb; depicts the graphs obtained from running main.py, as well as a markdown text-section at the end with a discussion of our results
+- 
+ """
+
+
 # Input data
 #to access test data:
 data = np.load('test_data.npz')
