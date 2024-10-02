@@ -27,8 +27,8 @@ def SGD_analytics(idx, weights, train_errors, test_errors, test_data, train_data
     print(f"Stochastic Gradient Descent:")
     print(f"Stopped after {idx + 1} iterations.")
     print(f"Final train E = {train_errors[-1]:.5f}, Final train E = {test_errors[-1]:.5f}")
-    print(f"Training set classification error = {100 * classification_error_train:.2f}%")
-    print(f"Testing set classification error = {100 * classification_error_test:.2f}%")
+    print(f"Training set classification error = {classification_error_train:.2f}%")
+    print(f"Testing set classification error = {classification_error_test:.2f}%")
 
 
 def update_rule_SGD(current_weights, X, labels, learning_rate, batch_size):
@@ -70,9 +70,8 @@ def experiments_SGD(train, val, test, weights, max_iter):
     for batch_size in batch_sizes:
         for learning_rate in learning_rates:
             start = time.time()
-            idx, weights, train_errors, validation_errors, test_errors = SGD(train, val, test, weights,
-                                                                             learning_rate, max_iter, batch_size)
-            print("Batch size: {}, learning_rate: {}. Elapsed time: {}".format(batch_size, learning_rate,
-                                                                               time.time() - start))
-
+            idx, weights, train_errors, validation_errors, test_errors = SGD(train, val, test, weights, learning_rate, max_iter, batch_size)
+            print()
+            end = time.time()
             SGD_analytics(idx, weights, train_errors, test_errors, train, test)
+            print(f"Batch size: {batch_size}, learning_rate: {learning_rate}. Elapsed time: {(end-start):.4f} seconds")

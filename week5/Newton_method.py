@@ -75,17 +75,17 @@ def newton_analytics(idx, weights, train_errors, test_errors, test_data, train_d
     classification_error_test = check_labels(weights, test_data)
     classification_error_train = check_labels(weights, train_data)
 
-    print(f"Newton method:")
+    print(f"Newton Method Analytics:")
     print(f"Stopped after {idx + 1} iterations.")
     print(f"Final train E = {train_errors[-1]:.5f}, Final train E = {test_errors[-1]:.5f}")
-    print(f"Training set classification error = {100 * classification_error_train:.2f}%")
-    print(f"Testing set classification error = {100 * classification_error_test:.2f}%")
+    print(f"Training set classification error = {classification_error_train:.2f}%")
+    print(f"Testing set classification error = {classification_error_test:.2f}%")
 
 
 
 def run_newton_method(train, validation, test, weights, max_iter):
     start = time.time()
     idx, weights, train_errors, validation_errors, test_errors, classif_error = Newton_method(train, validation, test, weights, max_iter)
-
-    print("Elapsed time: {}".format(time.time() - start))
+    end = time.time()
     newton_analytics(idx, weights, train_errors, test_errors, train, test)
+    print(f"Elapsed time: {(end-start):.4f} seconds")

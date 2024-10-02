@@ -63,9 +63,9 @@ def line_search_analytics(idx, weights, train_errors, test_errors, class_error, 
     print(f"Line Search Analytics:")
     print(f"Stopped after {idx + 1} iterations.")
     print(f"Final training error = {train_errors[-1]:.5f}, Final testing error = {test_errors[-1]:.5f}")
-    print(f"Training set classification error = {100 * class_error_train:.2f}%")
-    print(f"Testing set classification error = {100 * class_error_test:.2f}%")
-    print(f"Elapsed wall clock time was {elapsed} seconds")
+    print(f"Training set classification error = {class_error_train:.2f}%")
+    print(f"Testing set classification error = {class_error_test:.2f}%")
+    print(f"Elapsed wall clock time was {elapsed:.4f} seconds")
 
     return
 
@@ -132,9 +132,9 @@ def conjugate_gd_analytics(idx, weights, train_errors, test_errors, class_error,
     print(f"Conjugate Gradient Descent Analytics:")
     print(f"Stopped after {idx + 1} iterations.")
     print(f"Final training error = {train_errors[-1]:.5f}, Final testing error = {test_errors[-1]:.5f}")
-    print(f"Training set classification error = {100 * class_error_train:.2f}%")
-    print(f"Testing set classification error = {100 * class_error_test:.2f}%")
-    print(f"Elapsed wall clock time was {elapsed} seconds")
+    print(f"Training set classification error = {class_error_train:.2f}%")
+    print(f"Testing set classification error = {class_error_test:.2f}%")
+    print(f"Elapsed wall clock time was {elapsed:.4f} seconds")
 
     return
 

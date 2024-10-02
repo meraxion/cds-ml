@@ -47,6 +47,7 @@ def gradient_descent(input_train, input_vali, input_test, weights, learning_rate
     train_e = train_e[:i]
     validation_e = validation_e[:i]
     test_e = test_e[:i]
+    classif_error = classif_error[:i]
     return i, weights, train_e, validation_e, test_e, classif_error
 
 
@@ -62,10 +63,10 @@ def gradient_descent_analytics(par, learning_rate):
     plt.legend()
     plt.show()
 
+    print(f"Gradient Descent Analytics:")
     print(f"Stopped after {i} iterations")
-    print(f"E_train: {train_e[-1]}, E_test: {test_e[-1]}")
-    print(
-        f"Misclassified train set: {classif_error[-1]}")  # this is added so now I am unsure also it says train and test
+    print(f"E_train: {train_e[-1]:.5f}, E_test: {test_e[-1]:.5f}")
+    print(f"Misclassified test set: {classif_error[-1]:.2f}")  # this is added so now I am unsure also it says train and test
 
     return
 
@@ -77,7 +78,7 @@ def experiments_gradient_descent(input_train, input_vali, input_test, weights, m
         par = gradient_descent(input_train, input_vali, input_test, weights, learning_rate, max_iter)
         gradient_descent_analytics(par, learning_rate)
         end = time.time()
-        print(f"CPU time: {end - start}")
+        print(f"CPU time: {(end - start):.4f}")
 
 
 # --- Momentum
@@ -113,6 +114,8 @@ def gradient_descent_momentum(input_train, input_vali, input_test, weights, lear
     train_e = train_e[:i]
     validation_e = validation_e[:i]
     test_e = test_e[:i]
+    classif_error = classif_error[:i]
+
 
     return i, weights, train_e, validation_e, test_e, classif_error
 
@@ -129,10 +132,10 @@ def momentum_analytics(par, learning_rate, alpha):
     plt.legend()
     plt.show()
 
+    print(f"Gradient Descent with Momentum Analytics:")
     print(f"Stopped after {i} iterations")
-    print(f"E_train: {train_e[-1]}, E_test: {test_e[-1]}")
-    print(
-        f"Misclassified train set: {classif_error[-1]}")  # this is added so now I am unsure also it says train and test
+    print(f"E_train: {train_e[-1]:.5f}, E_test: {test_e[-1]:.5f}")
+    print(f"Misclassified test set: {classif_error[-1]:.2f}")  # this is added so now I am unsure also it says train and test
 
     return
 
@@ -147,7 +150,7 @@ def expirements_momentum(input_train, input_vali, input_test, initial_weights, l
                                             max_iter, alpha)
             momentum_analytics(par, learning_rate, alpha)
             end = time.time()
-            print(f"CPU time: {end - start}")
+            print(f"CPU time: {(end - start):.4f}")
     return
 
 
@@ -200,6 +203,8 @@ def gradient_descent_weight_decay(input_train, input_vali, input_test, weights, 
     train_e = train_e[:i]
     validation_e = validation_e[:i]
     test_e = test_e[:i]
+    classif_error = classif_error[:i]
+
 
     return i, weights, train_e, validation_e, test_e, classif_error
 
@@ -216,9 +221,10 @@ def weight_decay_analytics(par, lambda_):
     plt.legend()
     plt.show()
 
+    print(f"Gradient Descent with Weight Decay Analytics:")
     print(f"Stopped after {i} iterations")
-    print(f"E_train: {train_e[-1]}, E_test: {test_e[-1]}")
-    print(f"Misclassified train set: {classif_error[-1]}")
+    print(f"E_train: {train_e[-1]:.5f}, E_test: {test_e[-1]:.5f}")
+    print(f"Misclassified train set: {classif_error[-1]:.2f}")
     return
 
 
@@ -229,5 +235,5 @@ def experiments_weight_decay(input_train, input_vali, input_test, initial_weight
                                         max_iter, alpha)
     weight_decay_analytics(par, lambda_)
     end = time.time()
-    print(f"CPU time: {end - start}")
+    print(f"CPU time: {(end - start):.4f}")
     return
