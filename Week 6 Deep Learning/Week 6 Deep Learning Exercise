@@ -21,7 +21,6 @@ in this model?
 2- Reuse the code from part 1 to build and run a MLP with one hidden layer as big a you can. 
 Compare the performance of your design with the results appearing in Table 1 of [https://arxiv.org/pdf/1611.03530.pdf] for a MLP of 512 units in a single 
 hidden layer. Report the best result found for a maximum of 1000 epochs or 2 hrs CPU running time.
-The best accuracy amongst all teams will be awarded extra points.
 
 3- Convolutional Networks. Study the performance properties of the convolutional network provided in the Tensorflow tutorial. How is 
 the learning affected if instead of ReLU units, tanh() activations are used? What is the reason for this? Compare also
