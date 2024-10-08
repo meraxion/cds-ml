@@ -19,12 +19,12 @@ model_match = models.Sequential([
   layers.Dense(10, activation = "softmax")
 ])
 
-model_match.compile(optimizer = optimizers.Adam(learning_rate=1e-3, decay=3.0), loss = "sparse_categorical_crossentropy", metrics = ["accuracy"])
+model_match.compile(optimizer = optimizers.Adam(learning_rate=1e-3, decay=2), loss = "sparse_categorical_crossentropy", metrics = ["accuracy"])
 
 model_match.build(train_images.shape)
 model_match.summary()
 
-history = model_match.fit(train_images, train_labels, epochs=25,
+history = model_match.fit(train_images, train_labels, epochs=1000,
                         validation_data = (test_images, test_labels))
 
 
