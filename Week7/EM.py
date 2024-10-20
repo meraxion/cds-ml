@@ -50,53 +50,91 @@ def prep_data():
     return standardized_data
 
 
-def gaussian(sigma, a, x):
-    term_one = (1 / np.sqrt(2 * np.pi * sigma ** 2))
-    term_two = np.exp(-(x - a) ** 2 / (2 * big_sigma_k))
-    return term_one * term_two
 
-def multivariate_gaussian(sigma, a, x):
-    D = mu.shape[0]
-
-    # Compute the determinant and inverse of the covariance matrix
-    sigma_det = np.linalg.det(sigma)
-    sigma_inv = np.linalg.inv(sigma)
-
-    # Compute the normalization factor
-    norm_factor = 1 / np.sqrt((2 * np.pi) ** D * sigma_det)
-
-    # Center the data
-    diff = x - mu
-
-    # Compute the exponent term
-    exponent = np.einsum('...i,ij,...j', diff, sigma_inv, diff)
-
-    # Return the multivariate Gaussian density
-    return norm_factor * np.exp(-0.5 * exponent)
 
 def gaussian_w_pi_k(pi_k, big_sigma, a, X):
     gaussian_pi = pi_k * multivariate_normal.pdf(X, mean=a, cov=big_sigma)
     return gaussian_pi
 
 
-def calc_r_k(pi_k, big_sigma_k, X, a_k):
+def E_step(pi_k, big_sigma_k, X, a_k):
     gausians_with_pi = []
     for i in range(2):
     # for i, x in enumerate(X.T):
         # todo sigma and a will be different for different k, so I need to take them from a matrix!
-        gaussian_pi_k = gaussian_w_pi_k(pi_k, big_sigma_k[i], a_k[i], X)
+        gaussian_pi_k = gaussian_w_pi_k(pi_k[i], big_sigma_k[i], a_k[i], X)
         gausians_with_pi.append(gaussian_pi_k)
     r_ks = []
     for i, gaussian_pi_k in enumerate(gausians_with_pi):
-        r_k = gaussian_pi_k / sum(gausians_with_pi)
+        su = sum(gausians_with_pi)
+        r_k = gaussian_pi_k / su
         r_ks.append(r_k)
-    # denominator = np
+    return r_ks
+
+
+def update_covariance(X, responsibility_k, mu_k_new, N_k):
+    """
+    Update the covariance matrix for the k-th Gaussian component.
+
+    Args:
+    X : np.array (N, D) - Data points (N: number of points, D: dimensionality)
+    responsibilities : np.array (N, K) - Responsibilities for each point and component (N: number of points, K: number of components)
+    mu_k_new : np.array (D,) - Updated mean for the k-th component
+    k : int - Index of the Gaussian component
+
+    Returns:
+    cov_k_new : np.array (D, D) - Updated covariance matrix for the k-th Gaussian component
+    """
+    N, D = X.shape  # N is the number of data points, D is the dimensionality
+
+    # Initialize the covariance matrix as a zero matrix
+    cov_k_new = np.zeros((D, D))
+
+    # Compute the covariance matrix for the k-th component
+    for n in range(N):
+        diff = (X[n] - mu_k_new).reshape(-1, 1)  # Shape (D, 1)
+        prod = np.dot(diff, diff.T)
+        cov_k_new += responsibility_k[n] * prod  # Outer product and summation
+
+    # Normalize by N_k (total responsibilities for the k-th component)
+    cov_k_new /= N_k
+
+    return cov_k_new
+
+
+def M_step(r_ks, X):
+    n = len(X)
+    pi_k = []
+    big_sigma_k = []
+    a_k = []
+    # iterate over clusters
+    for i, r_k in enumerate(r_ks):
+        N_k = sum(r_k)
+        new_pi_k = N_k / n
+        pi_k.append(new_pi_k)
+        new_a_k = (1/ N_k ) * (r_k @ X)
+        a_k.append(new_a_k)
+        rr = (X - new_a_k) @ (X - new_a_k).T
+        new_sigma_k = (1 / N_k) * (r_k @ rr)
+        new_a_k_v2 = []
+
+        for r, x in zip(r_k, X):
+            aaa = (x -new_a_k).reshape(-1, 1)
+            bbb = aaa @ aaa.T
+            new_a_k_v2.append(r * bbb)
+
+        res = (1/ N_k ) * sum(new_a_k_v2)
+        big_sigma_k.append(res)
+
+    return pi_k, big_sigma_k, a_k
+
+
 
 
 
 # initialization of values
 k = 2
-pi_k = 1/k
+pi_k = np.array([1/k, 1/k])
 
 # a_k = np.array([[1, -1], [1, -1]]) # taken from a book [mu1, mu2]
 a_k = np.random.uniform(low=-1, high=1, size=1)
@@ -107,15 +145,31 @@ big_sigma_k = np.array([1])
 # big_sigma_k = np.array([1, 1])
 data = prep_data()
 
-mu = np.array([[-1.5, 1.5], [1.5, -1.5]])
+mu = np.array([[-1, 1], [1, -1]])
+# mu = np.array([[-1.5, 1.5], [1.5, -1.5]])
 cov =np.array([np.eye(2), np.eye(2)])
 
 
 
 plot_data(data, mu, cov)
 # plot_data(data, a_k, big_sigma_k)
-r_k = calc_r_k(pi_k, cov, data, mu)
-
+print(np.array(pi_k).shape)
+print(pi_k)
+print(np.array(cov).shape)
+print(cov)
+print(np.array(mu).shape)
+print(mu)
+for _ in range(50):
+    responsibilities = E_step(pi_k, cov, data, mu)
+    pi_k, cov, mu = M_step(responsibilities, data)
+    print('after')
+    print(np.array(pi_k).shape)
+    print(pi_k)
+    print(np.array(cov).shape)
+    print(cov)
+    print(np.array(mu).shape)
+    print(mu)
+plot_data(data, mu, cov)
 
 
 
