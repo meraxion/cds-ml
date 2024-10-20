@@ -60,8 +60,6 @@ def gaussian_w_pi_k(pi_k, big_sigma, a, X):
 def E_step(pi_k, big_sigma_k, X, a_k):
     gausians_with_pi = []
     for i in range(2):
-    # for i, x in enumerate(X.T):
-        # todo sigma and a will be different for different k, so I need to take them from a matrix!
         gaussian_pi_k = gaussian_w_pi_k(pi_k[i], big_sigma_k[i], a_k[i], X)
         gausians_with_pi.append(gaussian_pi_k)
     r_ks = []
@@ -71,35 +69,6 @@ def E_step(pi_k, big_sigma_k, X, a_k):
         r_ks.append(r_k)
     return r_ks
 
-
-def update_covariance(X, responsibility_k, mu_k_new, N_k):
-    """
-    Update the covariance matrix for the k-th Gaussian component.
-
-    Args:
-    X : np.array (N, D) - Data points (N: number of points, D: dimensionality)
-    responsibilities : np.array (N, K) - Responsibilities for each point and component (N: number of points, K: number of components)
-    mu_k_new : np.array (D,) - Updated mean for the k-th component
-    k : int - Index of the Gaussian component
-
-    Returns:
-    cov_k_new : np.array (D, D) - Updated covariance matrix for the k-th Gaussian component
-    """
-    N, D = X.shape  # N is the number of data points, D is the dimensionality
-
-    # Initialize the covariance matrix as a zero matrix
-    cov_k_new = np.zeros((D, D))
-
-    # Compute the covariance matrix for the k-th component
-    for n in range(N):
-        diff = (X[n] - mu_k_new).reshape(-1, 1)  # Shape (D, 1)
-        prod = np.dot(diff, diff.T)
-        cov_k_new += responsibility_k[n] * prod  # Outer product and summation
-
-    # Normalize by N_k (total responsibilities for the k-th component)
-    cov_k_new /= N_k
-
-    return cov_k_new
 
 
 def M_step(r_ks, X):
@@ -130,19 +99,13 @@ def M_step(r_ks, X):
 
 
 
-
-
 # initialization of values
 k = 2
 pi_k = np.array([1/k, 1/k])
 
-# a_k = np.array([[1, -1], [1, -1]]) # taken from a book [mu1, mu2]
 a_k = np.random.uniform(low=-1, high=1, size=1)
-# a_k = np.random.uniform(low=-1, high=1, size=2)
-# I = np.identity(2) # taken from a book [mu1, mu2]
-# big_sigma_k = np.array([I, I])
-big_sigma_k = np.array([1])
-# big_sigma_k = np.array([1, 1])
+
+
 data = prep_data()
 
 mu = np.array([[-1, 1], [1, -1]])
