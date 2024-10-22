@@ -1,6 +1,7 @@
 # from sklearn.datasets import fetch_openml
 import numpy as np
 import pandas as pd
+import scipy.stats as sps
 
 """
 1. Initialize k jk random.
@@ -14,15 +15,36 @@ import pandas as pd
 """
 
 class MixtureModel:
-    def __init__(self, clusters, features):
+    def __init__(self, clusters:int, features:int, data):
         self.clusters = clusters
         self.features = features # do we need to specify features in a way?
+        self.data = data
 
         self.pi = np.random.rand(clusters)
         self.pi /= self.pi.sum()
 
         self.mu_jk = np.random.rand(clusters, features)
 
+    def likelihood(self, mu_jk):
+
+        pxsk = np.zeros((self.data.shape[0], self.clusters))
+        for i in range(self.data.shape[0]):
+            for k in range(self.clusters):
+                product = 1
+                for j in range(self.data.shape[1]):
+                    product *= mu_jk[k, j]**data[i, j]*(1- mu_jk[k, j])**(1-data[i, j])
+                pxsk[i, k] = product
+        return pxsk
+    
+    def prior(self):
+        pxst = np.zeros(self.data.shape[1])
+        pxsk = self.likelihood(self.mu_jk)
+        for i in range(self.data.shape[1]):
+            for k in range(self.clusters):
+                pxst[i] += self.pi[k]*pxsk[i, k]
+        return pxst
+            
+        
 
     def k_mu(self, x_mu, k):
         return np.argmax()
@@ -40,8 +62,15 @@ class MixtureModel:
         return
 
 
+noise = sps.multivariate_normal(cov=np.eye(2)*0.1)
+dp1 = [1, 0] 
+dp2 = [1, 0] 
+dp3 = [0, 1] 
+dp4 = [0, 1] 
 
-
+data = np.array([dp1, dp2, dp3, dp4])
+MM = MixtureModel(2, 2, data)
+MM.likelihood()
 
 
 data = np.load('train_data.npz')
