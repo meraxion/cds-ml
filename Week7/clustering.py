@@ -25,7 +25,7 @@ class MixtureModel:
 
         self.mu_jk = np.random.rand(clusters, features)
 
-    def likelihood(self, mu_jk):
+    def pdata_given_clusters(self, mu_jk):
 
         pxsk = np.zeros((self.data.shape[0], self.clusters))
         for i in range(self.data.shape[0]):
@@ -36,7 +36,7 @@ class MixtureModel:
                 pxsk[i, k] = product
         return pxsk
     
-    def prior(self):
+    def pdata_given_params(self):
         pxst = np.zeros(self.data.shape[1])
         pxsk = self.likelihood(self.mu_jk)
         for i in range(self.data.shape[1]):
@@ -44,34 +44,69 @@ class MixtureModel:
                 pxst[i] += self.pi[k]*pxsk[i, k]
         return pxst
             
+    def log_likelihood(self, k, lam):
+        sum = 0
+        lsum = 0
+        for mu in range(self.data.shape[0]):
+            sum += np.log(self.pi[k[mu]])
+
+        for j in range(self.data.shape[1]):
+            for mu in range(self.data.shape[0]):
+                sum += self.data[mu, j]*np.log(self.mu_jk[j, k[mu]]) + (1-self.data[mu, j])*np.log(1- self.mu_jk[j, k[mu]])
+                
+        for k in range(self.clusters):
+            lsum += self.pi[k]
+        sum += lam*(lsum -1)
+        return sum
         
 
-    def k_mu(self, x_mu, k):
-        return np.argmax()
+    def k_mu(self):
+        pxk = self.pi*self.pdata_given_clusters(self.mu_jk)
+        return np.argmax(pxk, axis=1, keepdims=True)
     
-    def N_k(self, deltak_kmu):
-        N_k = np.sum(deltak_kmu)
+    def delta_func(self, k, kmu):
+        return np.where(k == kmu)
+    
+    def N_k(self, kmu):
+        N_k = np.zeros((self.clusters, 1))
+        for k in range(self.clusters):
+            N_k[k] += self.delta_func(k, kmu)
         return N_k
     
-    def m_jk(self, deltak_kmu):
-        N_k = self.N_k(deltak_kmu)
-
-        return
+    def pi_k(self, N_k):
+        self.pi  = N_k/self.data.shape[0]
     
-    def run_model(self):
+    def m_jk(self, N_k):
+        m_jk = 0
+        for j in range(self.data.shape[1]):
+            for mu in range(self.data.shape[0]):
+                m_jk += self.data[mu, j]
+        m_jk /= N_k
+
+        return m_jk
+    
+    def run_model(self, max_iter = 1000):
+        for t in range(max_iter):
+            k_mu = self.k_mu()
+            N_k = self.N_k(k_mu)
+            self.pi_k(N_k)
+            m_jk = self.m_jk()
+            self.mu_jk = m_jk
         return
 
 
-noise = sps.multivariate_normal(cov=np.eye(2)*0.1)
-dp1 = [1, 0] 
-dp2 = [1, 0] 
-dp3 = [0, 1] 
-dp4 = [0, 1] 
+# noise = sps.multivariate_normal(cov=np.eye(2)*0.1)
+# dp1 = [1, 0] 
+# dp2 = [1, 0] 
+# dp3 = [0, 1] 
+# dp4 = [0, 1] 
 
-data = np.array([dp1, dp2, dp3, dp4])
-MM = MixtureModel(2, 2, data)
-MM.likelihood()
-
+# data = np.array([dp1, dp2, dp3, dp4])
 
 data = np.load('train_data.npz')
 X_train_norm = data['X_train_norm']
+
+MM = MixtureModel(10, X_train_norm.shape[0], X_train_norm)
+MM.k_mu()
+
+
