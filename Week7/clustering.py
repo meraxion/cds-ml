@@ -2,6 +2,7 @@
 import numpy as np
 import pandas as pd
 import scipy.stats as sps
+import matplotlib.pyplot as plt
 
 """
 1. Initialize k jk random.
@@ -85,6 +86,19 @@ class MixtureModel:
 
         return m_jk
     
+    def plot(self):
+        plt.figure(figsize=(10, 10))
+    
+        for i in range(self.clusters):
+            image = self.mu_jk[i].reshape((28,28))
+            
+            plt.subplot(1, self.clusters, i + 1)
+            plt.imshow(image, cmap='gray')
+            plt.title(f'Cluster {i+1}')
+        
+        plt.show()
+
+    
     def run_model(self, max_iter = 1000):
         for t in range(max_iter):
             k_mu = self.k_mu()
@@ -92,6 +106,7 @@ class MixtureModel:
             self.pi_k(N_k)
             m_jk = self.m_jk()
             self.mu_jk = m_jk
+        self.plot()
         return
 
 
@@ -106,7 +121,7 @@ class MixtureModel:
 data = np.load('train_data.npz')
 X_train_norm = data['X_train_norm']
 
-MM = MixtureModel(10, X_train_norm.shape[0], X_train_norm)
+MM = MixtureModel(10, X_train_norm.shape[1], X_train_norm)
 MM.k_mu()
 
 
