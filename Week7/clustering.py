@@ -1,4 +1,6 @@
-from sklearn.datasets import fetch_openml
+# from sklearn.datasets import fetch_openml
+import numpy as np
+import pandas as pd
 
 """
 1. Initialize k jk random.
@@ -11,3 +13,36 @@ from sklearn.datasets import fetch_openml
  K j=1 dcomputemjk. Set jk =mjk
 """
 
+class MixtureModel:
+    def __init__(self, clusters, features):
+        self.clusters = clusters
+        self.features = features # do we need to specify features in a way?
+
+        self.pi = np.random.rand(clusters)
+        self.pi /= self.pi.sum()
+
+        self.mu_jk = np.random.rand(clusters, features)
+
+
+    def k_mu(self, x_mu, k):
+        return np.argmax()
+    
+    def N_k(self, deltak_kmu):
+        N_k = np.sum(deltak_kmu)
+        return N_k
+    
+    def m_jk(self, deltak_kmu):
+        N_k = self.N_k(deltak_kmu)
+
+        return
+    
+    def run_model(self):
+        return
+
+
+
+
+
+
+data = np.load('train_data.npz')
+X_train_norm = data['X_train_norm']
