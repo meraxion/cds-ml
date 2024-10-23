@@ -26,15 +26,15 @@ class MixtureModel:
 
         self.mu_jk = np.random.rand(clusters, features)
 
-    def pdata_given_clusters(self, mu_jk):
+    def logprob_data_given_clusters(self):
 
         pxsk = np.zeros((self.data.shape[0], self.clusters))
         for i in range(self.data.shape[0]):
             for k in range(self.clusters):
-                product = 1
+                sum = 0
                 for j in range(self.data.shape[1]):
-                    product *= mu_jk[k, j]**data[i, j]*(1- mu_jk[k, j])**(1-data[i, j])
-                pxsk[i, k] = product
+                    sum += self.data[i,j]*self.mu_jk[k,j] + (1-self.data[i,j]*(1-self.mu_jk[k,j]))
+                pxsk[i, k] = sum
         return pxsk
     
     def pdata_given_params(self):
@@ -60,9 +60,8 @@ class MixtureModel:
         sum += lam*(lsum -1)
         return sum
         
-
     def k_mu(self):
-        pxk = self.pi*self.pdata_given_clusters(self.mu_jk)
+        pxk = self.pi*self.logprob_data_given_clusters()
         return np.argmax(pxk, axis=1, keepdims=True)
     
     def delta_func(self, k, kmu):
@@ -118,10 +117,10 @@ class MixtureModel:
 
 # data = np.array([dp1, dp2, dp3, dp4])
 
-data = np.load('train_data.npz')
-X_train_norm = data['X_train_norm']
+df = np.load('train_data.npz')
+X_train_norm = df['X_train_norm']
 
 MM = MixtureModel(10, X_train_norm.shape[1], X_train_norm)
-MM.k_mu()
+MM.run_model()
 
 
