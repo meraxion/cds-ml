@@ -72,6 +72,14 @@ def prep_data():
 
 
 def gaussian_with_pi_k(pi_probability, big_sigma, a, X):
+    """
+    Calculates the joint probability of the prior for the classes and the multivariate Gaussian for the data for that class
+
+    :param pi_probability: prior for the classes
+    :param big_sigma: covariance matrix for the Gaussian
+    :param a: mean vector for the Gaussian
+    :param X: data points
+    """
     return pi_probability * multivariate_normal.pdf(X, mean=a, cov=big_sigma)
 
 def multi_cluster_gaussian_with_pi_k(pi_k, big_sigma_k, a_k, X, k):
