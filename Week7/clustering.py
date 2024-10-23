@@ -68,25 +68,30 @@ class MixtureModel:
     
     def delta_func(self, k, kmu):
         ks = np.full_like(kmu, k)
-        return np.sum(np.where(ks == kmu, 1, 0))
+        return np.where(ks == kmu, 1, 0)
     
     def N_k(self, kmu):
         N_k = np.zeros((self.clusters, 1))
         for k in range(self.clusters):
-            N_k[k] = self.delta_func(k, kmu)
+            N_k[k] = np.sum(self.delta_func(k, kmu))
         return N_k
     
     def pi_k(self, N_k):
         self.pi  = N_k/self.data.shape[0]
     
-    def m_jk(self, N_k):
-        m_jk = 0
-        for j in range(self.data.shape[1]):
-            for mu in range(self.data.shape[0]):
-                m_jk += self.data[mu, j]
-        m_jk /= N_k
+    def m_jk(self, N_k, kmu):
+        # m_jk = 0
+        # for j in range(self.data.shape[1]):
+        #     for mu in range(self.data.shape[0]):
+        #         m_jk += self.data[mu, j]
+        # m_jk /= N_k
 
-        return m_jk
+        m = np.zeros_like(self.mu_jk)
+        for j in range(self.features):
+            for k in range(self.clusters):
+                m[k, j] = np.sum(self.data[:,j]*self.delta_func(k, kmu))
+
+        return m/N_k
     
     def plot(self):
         plt.figure(figsize=(10, 10))
@@ -104,9 +109,13 @@ class MixtureModel:
     def run_model(self, max_iter = 1000):
         for t in range(max_iter):
             k_mu = self.k_mu()
+            # Diagnostic for argmax function:
+            unique, counts = np.unique(k_mu, return_counts=True)
+            print(dict(zip(unique, counts)))
+
             N_k = self.N_k(k_mu)
             self.pi_k(N_k)
-            m_jk = self.m_jk(N_k)
+            m_jk = self.m_jk(N_k, k_mu)
             self.mu_jk = m_jk
         self.plot()
         return
@@ -122,8 +131,7 @@ class MixtureModel:
 
 df = np.load('train_data.npz')
 X_train_norm = df['X_train_norm']
+# X_train_norm = X_train_norm[0:100]
 
 MM = MixtureModel(10, X_train_norm.shape[1], X_train_norm)
 MM.run_model()
-
-
