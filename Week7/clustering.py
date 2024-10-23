@@ -18,6 +18,9 @@ from sklearn.preprocessing import Binarizer
 """
 
 class MixtureModel:
+    """
+    Class for making a Multinomial Mixture model for clustering data.
+    """
     def __init__(self, clusters:int, features:int, data):
         self.clusters = clusters
         self.features = features # do we need to specify features in a way?
@@ -31,6 +34,9 @@ class MixtureModel:
         self.mu_jk = np.random.rand(clusters, features) 
 
     def logprob_data_given_clusters(self):
+        """
+        Calculates the log probability of each data point given each cluster
+        """
 
         # pxsk = np.zeros((self.data.shape[0], self.clusters))
         # for i in range(self.data.shape[0]):
@@ -46,14 +52,21 @@ class MixtureModel:
         return pxsk
 
     def pdata_given_params(self):
+        """
+        Not used.
+        An expression for the probability of data given the current parameters of the model (self.pi, and self.mu_jk) """
         pxst = np.zeros(self.data.shape[1])
-        pxsk = self.likelihood(self.mu_jk)
+        pxsk = self.log_likelihood(self.mu_jk)
         for i in range(self.data.shape[1]):
             for k in range(self.clusters):
                 pxst[i] += self.pi[k]*pxsk[i, k]
         return pxst
             
     def log_likelihood(self, k, lam):
+        """
+        Not used.
+        Calculates an expression of the total log-likelihood of the data, including the Lagrangian.
+        """
         sum = 0
         lsum = 0
         for mu in range(self.data.shape[0]):
@@ -69,14 +82,23 @@ class MixtureModel:
         return sum
         
     def k_mu(self):
+        """
+        Computes the log probability of each data point given each cluster, then takes the arg-max over the clusters.
+        """
         pxk = np.log(self.pi).T + self.logprob_data_given_clusters()
         return np.argmax(pxk, axis=1, keepdims=True)
     
     def delta_func(self, k, kmu):
+        """
+        Returns a vector corresponding to the dirac delta function for the assignation of data points to clusters (kmu), and the clusters.
+        """
         ks = np.full_like(kmu, k)
         return np.where(ks == kmu, 1, 0)
     
     def N_k(self, kmu):
+        """
+        Computes the number of data points assigned to each cluster k
+        """
         N_k = np.ones((self.clusters, 1))
         for k in range(self.clusters):
             N_k[k] = np.sum(self.delta_func(k, kmu))
@@ -87,9 +109,15 @@ class MixtureModel:
         return self.pi
     
     def set_pi_k(self, N_k):
+        """
+        Updates the parameter for pi_k
+        """
         self.pi  = (N_k+1)/(self.data.shape[0] +1)
     
     def m_jk(self, N_k, kmu):
+        """
+        Computes updated parameters mu_jk
+        """
         # m_jk = 0
         # for j in range(self.data.shape[1]):
         #     for mu in range(self.data.shape[0]):
@@ -123,6 +151,9 @@ class MixtureModel:
 
     
     def run_model(self, max_iter = 100):
+        """
+        Runs the Multinomial mixture algorithm on the data
+        """
         for t in range(max_iter):
             k_mu = self.k_mu()
             # Diagnostic for argmax function:
@@ -135,17 +166,6 @@ class MixtureModel:
             self.mu_jk = m_jk
         self.plot()
         return
-
-
-# noise = sps.multivariate_normal(cov=np.eye(2)*0.1)
-# dp1 = [1, 0] 
-# dp2 = [1, 0] 
-# dp3 = [0, 1] 
-# dp4 = [0, 1] 
-
-# data = np.array([dp1, dp2, dp3, dp4])
-
-
 
 mnist = fetch_openml('mnist_784', version=1)
 X = mnist.data.astype(np.int32)[:1000].values
