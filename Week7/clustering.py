@@ -108,7 +108,9 @@ class MixtureModel:
     
         for i in range(self.clusters):
             image = self.mu_jk[i].reshape((28,28))
-            
+            # denormalization
+            image = image*255
+
             plt.subplot(1, self.clusters, i + 1)
             plt.imshow(image, cmap='gray')
             plt.title(f'Cluster {i+1}')
@@ -121,7 +123,7 @@ class MixtureModel:
             k_mu = self.k_mu()
             # Diagnostic for argmax function:
             unique, counts = np.unique(k_mu, return_counts=True)
-            print(dict(zip(unique, counts)))
+            # print(dict(zip(unique, counts)))
 
             N_k = self.N_k(k_mu)
             m_jk = self.m_jk(N_k, k_mu)
@@ -139,7 +141,7 @@ class MixtureModel:
 
 # data = np.array([dp1, dp2, dp3, dp4])
 
-df = np.load('train_data.npz')
+df = np.load('train_data_all.npz')
 X_train_norm = df['X_train_norm']
 X_train_norm = X_train_norm[0:1000]
 

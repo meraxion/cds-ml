@@ -56,7 +56,7 @@ import matplotlib.pyplot as plt
 #
 # Set file paths based on added MNIST Datasets
 #
-input_path = '../MNIST'
+input_path = '../../MNIST'
 training_images_filepath = join(input_path, 'train-images-idx3-ubyte/train-images-idx3-ubyte')
 training_labels_filepath = join(input_path, 'train-labels-idx1-ubyte/train-labels-idx1-ubyte')
 test_images_filepath = join(input_path, 't10k-images-idx3-ubyte/t10k-images-idx3-ubyte')
@@ -98,17 +98,12 @@ def relabel(Y, mapping):
 def preprocess(X, Y):
     # process Y
     Y = np.array(Y)
-    relevant_numbers_idx = np.where((Y == 3) | (Y == 7))
-    Y_filter = Y[relevant_numbers_idx[0]]
-    mapping = {3: 0, 7: 1}
-    Y_normalized = relabel(Y_filter, mapping)
 
     # process X
     X = np.array(X)
-    X_filter = X[relevant_numbers_idx[0], :, :]
-    X_normalized = normalize(X_filter)
-    X_normalized = X_normalized.reshape(len(Y_normalized), X_normalized.shape[1] * X_normalized.shape[2])
-    return X_normalized, Y_normalized, X_filter, Y_filter
+    X_normalized = normalize(X)
+    X_normalized = X_normalized.reshape(len(Y), X_normalized.shape[1] * X_normalized.shape[2])
+    return X_normalized, Y, X, Y
 
 
 #
@@ -119,7 +114,7 @@ mnist_dataloader = MnistDataloader(training_images_filepath, training_labels_fil
 (x_train, y_train), (x_test, y_test) = mnist_dataloader.load_data()
 
 X_train_norm, Y_train_norm, X_train_raw, Y_train_raw = preprocess(x_train, y_train)
-np.savez('train_data.npz',
+np.savez('train_data_all.npz',
          X_train_norm=X_train_norm,
          Y_train_norm=Y_train_norm,
          X_train_raw=X_train_raw,
@@ -128,7 +123,7 @@ np.savez('train_data.npz',
 # X_train_norm, Y_train_norm, X_train_raw, Y_train_raw = train_data
 
 X_test_norm, Y_test_norm, X_test_raw, Y_test_raw = preprocess(x_test, y_test)
-np.savez('test_data.npz',
+np.savez('test_data_all.npz',
          X_test_norm=X_test_norm,
          Y_test_norm=Y_test_norm,
          X_test_raw=X_test_raw,
