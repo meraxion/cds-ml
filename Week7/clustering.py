@@ -73,7 +73,7 @@ class MixtureModel:
         return np.where(ks == kmu, 1, 0)
     
     def N_k(self, kmu):
-        N_k = np.zeros((self.clusters, 1))
+        N_k = np.ones((self.clusters, 1))
         for k in range(self.clusters):
             N_k[k] = np.sum(self.delta_func(k, kmu))
         return N_k
