@@ -28,14 +28,16 @@ class MixtureModel:
 
     def logprob_data_given_clusters(self):
 
-        pxsk = np.zeros((self.data.shape[0], self.clusters))
-        for i in range(self.data.shape[0]):
-            for k in range(self.clusters):
-                sum = 0
-                for j in range(self.data.shape[1]):
-                    sum += self.data[i,j]*self.mu_jk[k,j] + (1-self.data[i,j]*(1-self.mu_jk[k,j]))
-                pxsk[i, k] = sum
+        # pxsk = np.zeros((self.data.shape[0], self.clusters))
+        # for i in range(self.data.shape[0]):
+        #     for k in range(self.clusters):
+        #         sum = 0
+        #         for j in range(self.data.shape[1]):
+        #             sum += self.data[i,j]*np.log(self.mu_jk[k,j]) + (1-self.data[i,j])*np.log(1-self.mu_jk[k,j])
+        #         pxsk[i, k] = sum
+        pxsk = self.data@np.log(self.mu_jk).T + (1-self.data)@np.log(1-self.mu_jk).T
         return pxsk
+
     
     def pdata_given_params(self):
         pxst = np.zeros(self.data.shape[1])
