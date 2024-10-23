@@ -63,16 +63,17 @@ class MixtureModel:
         return sum
         
     def k_mu(self):
-        pxk = self.pi*self.logprob_data_given_clusters()
+        pxk = np.log(self.pi) + self.logprob_data_given_clusters()
         return np.argmax(pxk, axis=1, keepdims=True)
     
     def delta_func(self, k, kmu):
-        return np.where(k == kmu)
+        ks = np.full_like(kmu, k)
+        return np.sum(np.where(ks == kmu, 1, 0))
     
     def N_k(self, kmu):
         N_k = np.zeros((self.clusters, 1))
         for k in range(self.clusters):
-            N_k[k] += self.delta_func(k, kmu)
+            N_k[k] = self.delta_func(k, kmu)
         return N_k
     
     def pi_k(self, N_k):
@@ -105,7 +106,7 @@ class MixtureModel:
             k_mu = self.k_mu()
             N_k = self.N_k(k_mu)
             self.pi_k(N_k)
-            m_jk = self.m_jk()
+            m_jk = self.m_jk(N_k)
             self.mu_jk = m_jk
         self.plot()
         return
