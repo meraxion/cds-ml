@@ -21,10 +21,12 @@ class MixtureModel:
         self.features = features # do we need to specify features in a way?
         self.data = data
 
-        self.pi = np.random.rand(clusters)
-        self.pi /= self.pi.sum()
-
-        self.mu_jk = np.random.rand(clusters, features)
+        self.pi = np.ones(self.clusters)/self.clusters
+        # self.pi = np.random.rand(clusters)
+        # self.pi /= self.pi.sum()
+        # self.pi = np.reshape(self.pi, (10,1))
+        # random numbers between 0 and 1
+        self.mu_jk = np.random.rand(clusters, features) 
 
     def logprob_data_given_clusters(self):
 
@@ -63,7 +65,7 @@ class MixtureModel:
         return sum
         
     def k_mu(self):
-        pxk = np.log(self.pi) + np.exp(self.logprob_data_given_clusters())
+        pxk = np.log(self.pi).T + self.logprob_data_given_clusters()
         return np.argmax(pxk, axis=1, keepdims=True)
     
     def delta_func(self, k, kmu):
@@ -78,10 +80,10 @@ class MixtureModel:
     
     def get_pi_k(self):
 
-        return np.exp(self.pi)
+        return self.pi
     
     def set_pi_k(self, N_k):
-        self.pi  = N_k/self.data.shape[0]
+        self.pi  = (N_k+1)/(self.data.shape[0] +1)
     
     def m_jk(self, N_k, kmu):
         # m_jk = 0
@@ -93,10 +95,13 @@ class MixtureModel:
         m = np.zeros_like(self.mu_jk)
         for j in range(self.features):
             for k in range(self.clusters):
-                m[k, j] = np.sum(self.data[:,j]*self.delta_func(k, kmu))
+                m[k, j] = np.sum(self.data[:,j]*self.delta_func(k, kmu).T)
 
         m = m/N_k
-        return np.nan_to_num(m)
+        m = np.nan_to_num(m)
+        m = np.where(m==0, np.random.rand(self.clusters, self.features), m)
+
+        return m
     
     def plot(self):
         plt.figure(figsize=(10, 10))
@@ -136,7 +141,7 @@ class MixtureModel:
 
 df = np.load('train_data.npz')
 X_train_norm = df['X_train_norm']
-X_train_norm = X_train_norm[0:100]
+X_train_norm = X_train_norm[0:1000]
 
 MM = MixtureModel(10, X_train_norm.shape[1], X_train_norm)
 MM.run_model()
