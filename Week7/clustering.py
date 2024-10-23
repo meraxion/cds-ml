@@ -26,10 +26,9 @@ class MixtureModel:
         self.features = features # do we need to specify features in a way?
         self.data = data
 
-        self.pi = np.ones(self.clusters)/self.clusters
-        # self.pi = np.random.rand(clusters)
-        # self.pi /= self.pi.sum()
-        # self.pi = np.reshape(self.pi, (10,1))
+        self.pi = np.random.rand(clusters)
+        self.pi /= self.pi.sum()
+        self.pi = np.reshape(self.pi, (10,1))
         # random numbers between 0 and 1
         self.mu_jk = np.random.rand(clusters, features) 
 
@@ -54,7 +53,8 @@ class MixtureModel:
     def pdata_given_params(self):
         """
         Not used.
-        An expression for the probability of data given the current parameters of the model (self.pi, and self.mu_jk) """
+        An expression for the probability of data given the current parameters of the model (self.pi, and self.mu_jk)
+        """
         pxst = np.zeros(self.data.shape[1])
         pxsk = self.log_likelihood(self.mu_jk)
         for i in range(self.data.shape[1]):
@@ -101,7 +101,7 @@ class MixtureModel:
         """
         N_k = np.ones((self.clusters, 1))
         for k in range(self.clusters):
-            N_k[k] = np.sum(self.delta_func(k, kmu))
+            N_k[k] = np.sum(self.delta_func(k, kmu)) + 1
         return N_k
     
     def get_pi_k(self):
@@ -112,7 +112,7 @@ class MixtureModel:
         """
         Updates the parameter for pi_k
         """
-        self.pi  = (N_k+1)/(self.data.shape[0] +1)
+        self.pi  = (N_k)/(self.data.shape[0])
     
     def m_jk(self, N_k, kmu):
         """
@@ -145,7 +145,7 @@ class MixtureModel:
 
             plt.subplot(1, self.clusters, i + 1)
             plt.imshow(image, cmap='gray')
-            plt.title(f'Cluster {i+1}')
+            plt.title(f'{self.pi[i]}')
         
         plt.show()
 
@@ -154,6 +154,9 @@ class MixtureModel:
         """
         Runs the Multinomial mixture algorithm on the data
         """
+
+        epsilon = 1e-6
+
         for t in range(max_iter):
             k_mu = self.k_mu()
             # Diagnostic for argmax function:
@@ -163,13 +166,16 @@ class MixtureModel:
             N_k = self.N_k(k_mu)
             m_jk = self.m_jk(N_k, k_mu)
             self.set_pi_k(N_k)
+            if np.allclose(self.mu_jk, m_jk, epsilon):
+                print(f"Cluster algorithm converged in {t} iterations")
+                break
             self.mu_jk = m_jk
         self.plot()
         return
 
 mnist = fetch_openml('mnist_784', version=1)
-X = mnist.data.astype(np.int32)[:1000].values
-y = mnist.target.astype(np.int32)[:1000]
+X = mnist.data.astype(np.int32)[:2000].values
+y = mnist.target.astype(np.int32)[:2000]
 
 binarizer = Binarizer(threshold=127)
 X_bin = binarizer.fit_transform(X)
