@@ -55,15 +55,15 @@ class MixtureModel:
 
         for j in range(self.data.shape[1]):
             for mu in range(self.data.shape[0]):
-                sum += self.data[mu, j]*np.log(self.mu_jk[j, k[mu]]) + (1-self.data[mu, j])*np.log(1- self.mu_jk[j, k[mu]])
+                sum += self.data[mu, j]*np.log(self.mu_jk[j, k[mu]]) + (1-self.data[mu, j])*np.log(1 - self.mu_jk[j, k[mu]])
                 
         for k in range(self.clusters):
             lsum += self.pi[k]
-        sum += lam*(lsum -1)
+        sum += lam*(lsum - 1)
         return sum
         
     def k_mu(self):
-        pxk = np.log(self.pi) + self.logprob_data_given_clusters()
+        pxk = np.log(self.pi) + np.exp(self.logprob_data_given_clusters())
         return np.argmax(pxk, axis=1, keepdims=True)
     
     def delta_func(self, k, kmu):
@@ -76,7 +76,11 @@ class MixtureModel:
             N_k[k] = np.sum(self.delta_func(k, kmu))
         return N_k
     
-    def pi_k(self, N_k):
+    def get_pi_k(self):
+
+        return np.exp(self.pi)
+    
+    def set_pi_k(self, N_k):
         self.pi  = N_k/self.data.shape[0]
     
     def m_jk(self, N_k, kmu):
@@ -91,7 +95,8 @@ class MixtureModel:
             for k in range(self.clusters):
                 m[k, j] = np.sum(self.data[:,j]*self.delta_func(k, kmu))
 
-        return m/N_k
+        m = m/N_k
+        return np.nan_to_num(m)
     
     def plot(self):
         plt.figure(figsize=(10, 10))
@@ -114,8 +119,8 @@ class MixtureModel:
             print(dict(zip(unique, counts)))
 
             N_k = self.N_k(k_mu)
-            self.pi_k(N_k)
             m_jk = self.m_jk(N_k, k_mu)
+            self.set_pi_k(N_k)
             self.mu_jk = m_jk
         self.plot()
         return
@@ -131,7 +136,7 @@ class MixtureModel:
 
 df = np.load('train_data.npz')
 X_train_norm = df['X_train_norm']
-# X_train_norm = X_train_norm[0:100]
+X_train_norm = X_train_norm[0:100]
 
 MM = MixtureModel(10, X_train_norm.shape[1], X_train_norm)
 MM.run_model()
