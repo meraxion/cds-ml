@@ -3,6 +3,8 @@ import numpy as np
 import pandas as pd
 import scipy.stats as sps
 import matplotlib.pyplot as plt
+from sklearn.datasets import fetch_openml
+from sklearn.preprocessing import Binarizer
 
 """
 1. Initialize k jk random.
@@ -37,10 +39,12 @@ class MixtureModel:
         #         for j in range(self.data.shape[1]):
         #             sum += self.data[i,j]*np.log(self.mu_jk[k,j]) + (1-self.data[i,j])*np.log(1-self.mu_jk[k,j])
         #         pxsk[i, k] = sum
+        # pxsk = self.data@np.log(self.mu_jk).T
+        epsilon = 1e-10
+        self.mu_jk = np.clip(self.mu_jk, epsilon, 1 - epsilon)
         pxsk = self.data@np.log(self.mu_jk).T + (1-self.data)@np.log(1-self.mu_jk).T
         return pxsk
 
-    
     def pdata_given_params(self):
         pxst = np.zeros(self.data.shape[1])
         pxsk = self.likelihood(self.mu_jk)
@@ -102,7 +106,7 @@ class MixtureModel:
         m = np.where(m==0, np.random.rand(self.clusters, self.features), m)
 
         return m
-    
+
     def plot(self):
         plt.figure(figsize=(10, 10))
     
@@ -118,7 +122,7 @@ class MixtureModel:
         plt.show()
 
     
-    def run_model(self, max_iter = 1000):
+    def run_model(self, max_iter = 100):
         for t in range(max_iter):
             k_mu = self.k_mu()
             # Diagnostic for argmax function:
@@ -141,9 +145,14 @@ class MixtureModel:
 
 # data = np.array([dp1, dp2, dp3, dp4])
 
-df = np.load('train_data_all.npz')
-X_train_norm = df['X_train_norm']
-X_train_norm = X_train_norm[0:1000]
 
-MM = MixtureModel(10, X_train_norm.shape[1], X_train_norm)
+
+mnist = fetch_openml('mnist_784', version=1)
+X = mnist.data.astype(np.int32)[:1000].values
+y = mnist.target.astype(np.int32)[:1000]
+
+binarizer = Binarizer(threshold=127)
+X_bin = binarizer.fit_transform(X)
+
+MM = MixtureModel(10, X.shape[1], X)
 MM.run_model()
