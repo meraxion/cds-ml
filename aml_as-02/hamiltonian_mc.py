@@ -14,8 +14,8 @@ from typing import Callable
   4. On rejection, (xt+1, pt+1) = (xt, pt)
   """
 
-def hamiltonian(E:Callable, x:float, p:float):
-  return E(x) + np.dot(p.T, p)/2
+def hamiltonian(e:float, p:float):
+  return e + np.dot(p.T, p)/2
 
 def main():
   """
@@ -27,11 +27,9 @@ def main():
   dims = A.shape[0]
   a = np.eye(dims)
   
-  def find_E(x):
-    def E(x):
-      return 0.5 * x.T@A@x
-    return E
-  
+  def E(x):
+    return 0.5 * x.T@A@x
+   
   eps = 0.01
   Tau = 1_000
 
@@ -46,21 +44,25 @@ def main():
   rho_dist = sps.multivariate_normal([0.,0.], a)
   rho = rho_dist.rvs()
 
-  e = find_E(x0)
-  g = jax.grad(e, 0)(x0)
+  g = jax.grad(E)(x0)
+  e = E(x0)
 
   for i in range(len(times)):
-    x_new = x[i]; rho_new = rho
+    x_new = x[i].copy()
+    rho = rho_dist.rvs()
+    g_new = g
+    H = hamiltonian(e, rho)
 
     # start leapfrog
     for tau in range(Tau):
-      rho_new = rho_new - 0.5 * eps * g
-      x_new = x_new + eps*rho_new
-      g_new = jax.grad(e)(x_new)
-      rho_new = rho_new - 0.5 * eps * g_new
+      rho = rho - 0.5 * eps * g_new
+      x_new = x_new + eps*rho
+      g_new = jax.grad(E)(x_new)
+      rho = rho - 0.5 * eps * g_new
 
-    e_new = find_E(x_new)
-    dH = (hamiltonian(e_new, x_new, rho_new) - hamiltonian(e, x[i], rho))
+    e_new = E(x_new)
+    H_new = hamiltonian(e_new, rho)
+    dH = (H_new - H)
     if dH < 0:
       accept = 1
       num_accepts += 1
@@ -71,10 +73,11 @@ def main():
       accept = 0
 
     if accept: 
-      x[i+1] = x_new, g = g_new, e = e_new
+      x[i+1] = x_new
+      g = g_new
     else:
       x[i+1] = x[i]
-    accept_ratios[i] = num_accepts/i
+    accept_ratios[i] = num_accepts/(i+1)
 
   return x
 
