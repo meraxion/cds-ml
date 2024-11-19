@@ -14,14 +14,8 @@ from typing import Callable
   4. On rejection, (xt+1, pt+1) = (xt, pt)
   """
 
-x_init = np.asarray([0,0])
-
 def hamiltonian(E:Callable, x:float, p:float):
-  return E(x) + np.sum(np.power(p,2))/2
-
-def hmc():
-
-  return
+  return E(x) + np.dot(p.T, p)/2
 
 def main():
   """
@@ -42,6 +36,8 @@ def main():
   Tau = 1_000
 
   times = np.arange(0, 100, eps)
+  accept_ratios = np.zeros_like(times)
+  num_accepts   = 0
 
   x = np.zeros((len(times), dims), dtype=np.float32)
   x0 = np.asarray([5., 3.])
@@ -51,7 +47,7 @@ def main():
   rho = rho_dist.rvs()
 
   e = find_E(x0)
-  g = jax.grad(hamiltonian, 1)(e, x0, rho)
+  g = jax.grad(e, 0)(x0)
 
   for i in range(len(times)):
     x_new = x[i]; rho_new = rho
@@ -59,21 +55,26 @@ def main():
     # start leapfrog
     for tau in range(Tau):
       rho_new = rho_new - 0.5 * eps * g
-      x_new = x_new + eps*rho
-      g_new = jax.grad(hamiltonian, 1)(e, x_new, rho_new)
+      x_new = x_new + eps*rho_new
+      g_new = jax.grad(e)(x_new)
       rho_new = rho_new - 0.5 * eps * g_new
 
     e_new = find_E(x_new)
     dH = (hamiltonian(e_new, x_new, rho_new) - hamiltonian(e, x[i], rho))
     if dH < 0:
       accept = 1
+      num_accepts += 1
     elif np.random.rand() < np.exp(-dH):
       accept = 1
+      num_accepts += 1
     else:
       accept = 0
 
     if accept: 
       x[i+1] = x_new, g = g_new, e = e_new
+    else:
+      x[i+1] = x[i]
+    accept_ratios[i] = num_accepts/i
 
   return x
 
