@@ -2,7 +2,6 @@ import numpy as np
 import scipy.stats as sps
 import jax
 import jax.numpy as jnp
-
 from typing import Callable
 """Pseudocode:
  - Choose initial x1
@@ -43,13 +42,13 @@ def hmc(x0:np.ndarray,
   x = np.zeros((n_samples, x0.shape[0]), dtype=np.float32)
   x[0] = x0
 
-  rho_dist = sps.multivariate_normal([0.,0.], a)
+  rho_dist = sps.multivariate_normal([0.,0.])
   rho = rho_dist.rvs()
 
   g = jax.grad(energy_fn)(x0)
   e = energy_fn(x0)
 
-  for i in range(n_samples):
+  for i in range(n_samples-1):
     x_new = x[i].copy()
     rho = rho_dist.rvs()
     g_new = g
@@ -95,16 +94,18 @@ def main():
   def E(x):
     return 0.5 * x.T@A@x
    
-  n_samples = 20_000
+  n_samples = 200
   eps = 0.01
-  Tau = 1_000
-
-  accept_ratios = np.zeros((n_samples,))
-  num_accepts   = 0
+  Tau = 100
 
   x0 = np.asarray([5., 3.])
 
-  x, accepts = hmc(x0, E, n_samples)
+  x, accepts = hmc(x0, E, n_samples, eps, Tau)
+
+  print(f"""
+        The mean (vector) of this Gaussian is: {np.mean(x, axis=0)}.
+        The final acceptance ratio was: {accepts[-1]}.
+        """)
 
 if __name__ == "__main__":
   main()
