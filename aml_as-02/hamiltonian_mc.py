@@ -17,50 +17,52 @@ from typing import Callable
 def hamiltonian(e:float, p:float):
   return e + np.dot(p.T, p)/2
 
-def main():
+def hmc(x0:np.ndarray,
+        energy_fn:Callable[[np.ndarray], float],
+        n_samples:int,
+        eps:float = 0.01,
+        tau:int   = 1000) -> tuple[np.ndarray, np.ndarray]:
   """
-  runs HMC for the elongated gaussian exercise
+  Run Hamiltonian Monte Carlo sampling
+
+  args:
+    x0: initial position of the sampling process. array of shape (d,)
+    energy_fn: function that computes potential energy at position x
+    n_samples: number of samples to generate
+    eps: step size for leapfrog integration
+    tau: number of leapfrog steps per iteration
+
+  returns:
+    x: array of shape (n_samples, d), containing samples
+    accept_ratios: array of shape (n_samples,) the acceptance ratio over time for this run
   """
 
-  A = np.asarray([[250.25, -249.75], 
-                  [-249.75, 250.25]])
-  dims = A.shape[0]
-  a = np.eye(dims)
-  
-  def E(x):
-    return 0.5 * x.T@A@x
-   
-  eps = 0.01
-  Tau = 1_000
-
-  times = np.arange(0, 100, eps)
-  accept_ratios = np.zeros_like(times)
+  # Setup different arrays and counters
+  accept_ratios = np.zeros((n_samples,))
   num_accepts   = 0
-
-  x = np.zeros((len(times), dims), dtype=np.float32)
-  x0 = np.asarray([5., 3.])
+  x = np.zeros((n_samples, x0.shape[0]), dtype=np.float32)
   x[0] = x0
 
   rho_dist = sps.multivariate_normal([0.,0.], a)
   rho = rho_dist.rvs()
 
-  g = jax.grad(E)(x0)
-  e = E(x0)
+  g = jax.grad(energy_fn)(x0)
+  e = energy_fn(x0)
 
-  for i in range(len(times)):
+  for i in range(n_samples):
     x_new = x[i].copy()
     rho = rho_dist.rvs()
     g_new = g
     H = hamiltonian(e, rho)
 
     # start leapfrog
-    for tau in range(Tau):
+    for t in range(tau):
       rho = rho - 0.5 * eps * g_new
       x_new = x_new + eps*rho
-      g_new = jax.grad(E)(x_new)
+      g_new = jax.grad(energy_fn)(x_new)
       rho = rho - 0.5 * eps * g_new
 
-    e_new = E(x_new)
+    e_new = energy_fn(x_new)
     H_new = hamiltonian(e_new, rho)
     dH = (H_new - H)
     if dH < 0:
@@ -79,7 +81,30 @@ def main():
       x[i+1] = x[i]
     accept_ratios[i] = num_accepts/(i+1)
 
-  return x
+  return x, accept_ratios
+
+def main():
+  """
+  runs HMC for the elongated gaussian exercise
+  """
+  A = np.asarray([[250.25, -249.75], 
+                  [-249.75, 250.25]])
+  dims = A.shape[0]
+  a = np.eye(dims)
+  
+  def E(x):
+    return 0.5 * x.T@A@x
+   
+  n_samples = 20_000
+  eps = 0.01
+  Tau = 1_000
+
+  accept_ratios = np.zeros((n_samples,))
+  num_accepts   = 0
+
+  x0 = np.asarray([5., 3.])
+
+  x, accepts = hmc(x0, E, n_samples)
 
 if __name__ == "__main__":
   main()
