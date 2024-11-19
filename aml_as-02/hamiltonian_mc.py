@@ -107,6 +107,7 @@ def main():
 
   print(f"""
         The mean (vector) of this Gaussian is: {np.mean(x, axis=0)}.
+        The mean (vector) of this Gaussian, discarding 500 steps of burn-in is: {np.mean(x[:,len(x):])}
         The final acceptance ratio was: {accepts[-1]}.
         """)
 
