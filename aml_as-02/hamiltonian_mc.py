@@ -16,8 +16,8 @@ from typing import Callable
 
 x_init = np.asarray([0,0])
 
-def hamiltonian(E:Callable, x, p):
-  return E(x) + np.sum(np.pow(p,2))/2
+def hamiltonian(E:Callable, x:float, p:float):
+  return E(x) + np.sum(np.power(p,2))/2
 
 def hmc():
 
@@ -43,18 +43,17 @@ def main():
 
   times = np.arange(0, 100, eps)
 
-  x = np.zeros((dims, times))
-  x0 = [0, 0]
+  x = np.zeros((len(times), dims), dtype=np.float32)
+  x0 = np.asarray([5., 3.])
   x[0] = x0
 
+  rho_dist = sps.multivariate_normal([0.,0.], a)
+  rho = rho_dist.rvs()
+
   e = find_E(x0)
-  g = jax.grad(hamiltonian, 1)(E, x[i], rho_new)
+  g = jax.grad(hamiltonian, 1)(e, x0, rho)
 
-  for i, eps in range(times):
-    rho_dist = sps.multivariate_normal(0, a)
-    rho = rho_dist.rvs()
-    # do some hamiltonian stuff here
-
+  for i in range(len(times)):
     x_new = x[i]; rho_new = rho
 
     # start leapfrog
@@ -65,9 +64,13 @@ def main():
       rho_new = rho_new - 0.5 * eps * g_new
 
     e_new = find_E(x_new)
-    dH = np.exp(hamiltonian(e, x[i], rho) - hamiltonian(e_new, x_new, rho_new))
-    accept_prob = np.min(1, dH)
-    accept = 1 if accept_prob > np.random.rand() else 0
+    dH = (hamiltonian(e_new, x_new, rho_new) - hamiltonian(e, x[i], rho))
+    if dH < 0:
+      accept = 1
+    elif np.random.rand() < np.exp(-dH):
+      accept = 1
+    else:
+      accept = 0
 
     if accept: 
       x[i+1] = x_new, g = g_new, e = e_new
