@@ -3,6 +3,7 @@ import scipy.stats as sps
 import jax
 import jax.numpy as jnp
 from typing import Callable
+from tqdm import tqdm
 """Pseudocode:
  - Choose initial x1
  - for t = 1 : T:
@@ -20,7 +21,8 @@ def hmc(x0:np.ndarray,
         energy_fn:Callable[[np.ndarray], float],
         n_samples:int,
         eps:float = 0.01,
-        tau:int   = 1000) -> tuple[np.ndarray, np.ndarray]:
+        tau:int   = 1000
+        ) -> tuple[np.ndarray, np.ndarray]:
   """
   Run Hamiltonian Monte Carlo sampling
 
@@ -37,7 +39,7 @@ def hmc(x0:np.ndarray,
   """
 
   # Setup different arrays and counters
-  accept_ratios = np.zeros((n_samples,))
+  accept_ratios = np.zeros((n_samples-1,))
   num_accepts   = 0
   x = np.zeros((n_samples, x0.shape[0]), dtype=np.float32)
   x[0] = x0
@@ -48,7 +50,7 @@ def hmc(x0:np.ndarray,
   g = jax.grad(energy_fn)(x0)
   e = energy_fn(x0)
 
-  for i in range(n_samples-1):
+  for i in tqdm(range(n_samples-1)):
     x_new = x[i].copy()
     rho = rho_dist.rvs()
     g_new = g
@@ -77,7 +79,7 @@ def hmc(x0:np.ndarray,
       x[i+1] = x_new
       g = g_new
     else:
-      x[i+1] = x[i]
+      x[i+1] = x[i].copy()
     accept_ratios[i] = num_accepts/(i+1)
 
   return x, accept_ratios
@@ -94,12 +96,13 @@ def main():
   def E(x):
     return 0.5 * x.T@A@x
    
-  n_samples = 200
+  n_samples = 1000
   eps = 0.01
   Tau = 100
 
   x0 = np.asarray([5., 3.])
 
+  print(f"Running Hamiltonian Monte Carlo sampling run with: {n_samples} samples, leapfrog step size {eps}, and leapfrog steps {Tau}")
   x, accepts = hmc(x0, E, n_samples, eps, Tau)
 
   print(f"""
