@@ -16,9 +16,6 @@ from typing import Callable
 
 x_init = np.asarray([0,0])
 
-def p(z):
-  return 
-
 def hamiltonian(E:Callable, x, p):
   return E(x) + np.sum(np.pow(p,2))/2
 
@@ -35,9 +32,11 @@ def main():
                   [-249.75, 250.25]])
   dims = A.shape[0]
   a = np.eye(dims)
-    
-  def E(x):
-    return 0.5 * x.T@A@x
+  
+  def find_E(x):
+    def E(x):
+      return 0.5 * x.T@A@x
+    return E
   
   eps = 0.01
   Tau = 1_000
@@ -48,6 +47,9 @@ def main():
   x0 = [0, 0]
   x[0] = x0
 
+  e = find_E(x0)
+  g = jax.grad(hamiltonian, 1)(E, x[i], rho_new)
+
   for i, eps in range(times):
     rho_dist = sps.multivariate_normal(0, a)
     rho = rho_dist.rvs()
@@ -57,17 +59,20 @@ def main():
 
     # start leapfrog
     for tau in range(Tau):
-      rho_new = rho_new - 0.5 * eps * jax.grad(hamiltonian, 1)(E, x[i], rho_new)
+      rho_new = rho_new - 0.5 * eps * g
       x_new = x_new + eps*rho
-      rho_new = rho_new - 0.5 * eps * jax.grad(hamiltonian, 1)(E, x_new, rho_new)
+      g_new = jax.grad(hamiltonian, 1)(e, x_new, rho_new)
+      rho_new = rho_new - 0.5 * eps * g_new
 
-    dH = np.exp(hamiltonian(E, x[i], rho) - hamiltonian(E, x_new, rho_new))
+    e_new = find_E(x_new)
+    dH = np.exp(hamiltonian(e, x[i], rho) - hamiltonian(e_new, x_new, rho_new))
     accept_prob = np.min(1, dH)
     accept = 1 if accept_prob > np.random.rand() else 0
 
     if accept: 
-      x[i+1] = x_new
-    
-  
+      x[i+1] = x_new, g = g_new, e = e_new
+
+  return x
+
 if __name__ == "__main__":
   main()
