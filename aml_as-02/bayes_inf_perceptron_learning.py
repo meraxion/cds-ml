@@ -28,6 +28,7 @@ from hamiltonian_mc import hmc
 # 1/Zw(alpha) = (a/2pi)**(K/2)
 # how do we get P(D|alpha)
 labels = pd.read_csv('t.ext').to_numpy()[:-1].astype(int)
+labels = np.atleast_2d(labels)
 xs = pd.read_csv('x.ext', sep=' ').to_numpy()[:-1].astype(float)
 print(labels)
 
@@ -40,7 +41,7 @@ def G_calc(x, w, labels, y:Callable):
     # if using matrix multiplication, then we don't have to write sum'
     G = -labels * np.log(y(x, w)) + (1 - labels) * np.log(1 - y(x, w))
 
-    return G
+    return np.sum(G)
 
 def E_calc(w):
     return 1 / 2 * np.sum(w ** 2)
