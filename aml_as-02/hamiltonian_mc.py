@@ -21,7 +21,7 @@ def hmc(x0:np.ndarray,
         energy_fn:Callable[[np.ndarray], float],
         n_samples:int,
         eps:float = 0.01,
-        tau:int   = 1000
+        tau:int   = 1000,
         ) -> tuple[np.ndarray, np.ndarray]:
   """
   Run Hamiltonian Monte Carlo sampling
