@@ -17,7 +17,6 @@ def metropolis_hastings(num_iterations, x_init, sigma, proportional_function, *a
     sum_proposed = 0
     for t in range(num_iterations):
         # we always sample from normal distribution that is centered around current x
-        # todo: I'm not sure if we can simply use multivariate_normal here, seems like cheating. Idk what std to use and also if I'd use my gaussian function
         x_proposed = np.random.multivariate_normal(x_init, np.eye(len(x_init))*sigma**2)
 
         x_sample, num_proposed = sample_x(x_proposed, x_init, proportional_function, args)
