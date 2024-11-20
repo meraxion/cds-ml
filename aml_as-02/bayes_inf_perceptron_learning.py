@@ -16,6 +16,7 @@ import jax.numpy as jnp
 import pandas as pd
 from matplotlib import pyplot as plt
 from typing import Callable
+from jax import Array
 import scipy.stats as sps
 
 from metropolis_hastings import metropolis_hastings
@@ -33,10 +34,12 @@ labels = pd.read_csv('t.ext').to_numpy()[:-1].astype(int)
 labels = np.atleast_2d(labels)
 xs = pd.read_csv('x.ext', sep=' ').to_numpy()[:-1].astype(float)
 
+@jax.jit
 def y_function(x, w):
     wx = x @ w.T
     return 1 / (1 + jnp.exp(-wx))
 
+@jax.jit
 def G_calc(x, w, labels, y:Callable):
     # -np.sum(label)
     # if using matrix multiplication, then we don't have to write sum'
@@ -44,9 +47,11 @@ def G_calc(x, w, labels, y:Callable):
 
     return jnp.sum(G)
 
+@jax.jit
 def E_calc(w):
     return 1 / 2 * jnp.sum(w ** 2)
 
+@jax.jit
 def M(w, x, labels, a, G:Callable, E:Callable, y:Callable):
     g = G(x, w, labels, y)
     e = E(w)
@@ -60,9 +65,7 @@ def M(w, x, labels, a, G:Callable, E:Callable, y:Callable):
 
 alpha = 0.1
 
-
 def plots(xs, w1s, w2s, w3s):
-
     plt.plot(xs, w1s, label="w1")
     plt.plot(xs, w2s, label="w2")
     plt.plot(xs, w3s, label="w3")

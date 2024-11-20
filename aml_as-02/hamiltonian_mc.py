@@ -2,6 +2,7 @@ import numpy as np
 import scipy.stats as sps
 import jax
 import jax.numpy as jnp
+from jax import Array
 from typing import Callable
 from tqdm import tqdm
 """Pseudocode:
@@ -15,14 +16,34 @@ from tqdm import tqdm
   """
 
 def hamiltonian(e:float, p:float):
-  return e + np.dot(p.T, p)/2
+  return e + jnp.dot(p.T, p)/2
 
-def hmc(x0:np.ndarray,
-        energy_fn:Callable[[np.ndarray], float],
+def leapfrog_scan_fn(carry:tuple[tuple[Array, Array, Array], tuple[float, Callable]], t:int):
+  y, args = carry
+  rho, g_new, x_new = y
+  eps, energy_fn = args
+
+  rho = rho - 0.5 * eps * g_new
+  x_new = x_new + eps*rho
+  g_new = jax.grad(energy_fn)(x_new)
+  rho = rho - 0.5 * eps * g_new
+
+  y_next = rho, g_new, x_new
+  carry = y_next, args
+  return carry, y_next
+
+def run_leapfrog(rho, g, x, eps, energy_fn:Callable, tau):
+  init_carry = (rho, g, x), (eps, energy_fn)
+  (y, _), _ = jax.lax.scan(leapfrog_scan_fn, init_carry, jnp.arange(tau))
+
+  return y
+
+def hmc(x0:Array,
+        energy_fn:Callable[[Array], float],
         n_samples:int,
         eps:float = 0.01,
         tau:int   = 1000,
-        ) -> tuple[np.ndarray, np.ndarray]:
+        ) -> tuple[Array, Array]:
   """
   Run Hamiltonian Monte Carlo sampling
 
@@ -39,12 +60,12 @@ def hmc(x0:np.ndarray,
   """
 
   # Setup different arrays and counters
-  accept_ratios = np.zeros((n_samples-1,))
+  accept_ratios = jnp.zeros((n_samples-1,))
   num_accepts   = 0
-  x = np.zeros((n_samples, x0.shape[0]), dtype=np.float32)
+  x = jnp.zeros((n_samples, x0.shape[0]), dtype=jnp.float32)
   x[0] = x0
 
-  rho_dist = sps.multivariate_normal(np.zeros((x0.shape[0])))
+  rho_dist = sps.multivariate_normal(jnp.zeros((x0.shape[0])))
   rho = rho_dist.rvs()
 
   g = jax.grad(energy_fn)(x0)
@@ -56,7 +77,8 @@ def hmc(x0:np.ndarray,
     g_new = g
     H = hamiltonian(e, rho)
 
-    # start leapfrog
+    # run leapfrog
+    rho, g_new, x_new = run_leapfrog(rho, g_new, x_new, eps, energy_fn, tau)
     for t in range(tau):
       rho = rho - 0.5 * eps * g_new
       x_new = x_new + eps*rho
@@ -69,7 +91,7 @@ def hmc(x0:np.ndarray,
     if dH < 0:
       accept = 1
       num_accepts += 1
-    elif np.random.rand() < np.exp(-dH):
+    elif jnp.random.rand() < jnp.exp(-dH):
       accept = 1
       num_accepts += 1
     else:
@@ -88,11 +110,12 @@ def main():
   """
   runs HMC for the elongated gaussian exercise
   """
-  A = np.asarray([[250.25, -249.75], 
+  A = jnp.asarray([[250.25, -249.75], 
                   [-249.75, 250.25]])
   dims = A.shape[0]
-  a = np.eye(dims)
+  a = jnp.eye(dims)
   
+  @jax.jit
   def E(x):
     return 0.5 * x.T@A@x
    
@@ -100,14 +123,14 @@ def main():
   eps = 0.01
   Tau = 100
 
-  x0 = np.asarray([5., 3.])
+  x0 = jnp.asarray([5., 3.])
 
   print(f"Running Hamiltonian Monte Carlo sampling run with: {n_samples} samples, leapfrog step size {eps}, and leapfrog steps {Tau}")
   x, accepts = hmc(x0, E, n_samples, eps, Tau)
 
   print(f"""
-        The mean (vector) of this Gaussian is: {np.mean(x, axis=0)}.
-        The mean (vector) of this Gaussian, discarding 500 steps of burn-in is: {np.mean(x[:,len(x):])}
+        The mean (vector) of this Gaussian is: {jnp.mean(x, axis=0)}.
+        The mean (vector) of this Gaussian, discarding 500 steps of burn-in is: {jnp.mean(x[:,len(x):])}
         The final acceptance ratio was: {accepts[-1]}.
         """)
 
