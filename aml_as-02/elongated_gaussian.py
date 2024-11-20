@@ -33,7 +33,7 @@ for sigma in sigmas:
 
 eps = 0.01
 tau = 100
-
+num_iterations = 1000
 y, accepts = hmc(x_init, calc_E, num_iterations, eps, tau)
 plt.scatter(y[:, 0], y[:, 1])
 plt.xlabel('$x_1$')

@@ -51,8 +51,12 @@ def M(w, x, labels, a, G:Callable, E:Callable, y:Callable):
     g = G(x, w, labels, y)
     e = E(w)
     m = g + a*e
+
+    k = len(w)
+
+    z = jnp.power((a/2*jnp.pi), k/2)
     
-    return -m
+    return -m*z
 
 alpha = 0.1
 
@@ -72,8 +76,8 @@ def run_hmc(labels, xs):
 
     xs = np.arange(n_samples)
     plt.plot(xs, w1s, label="w1")
-    plt.plot(xs, w2s, label="w1")
-    plt.plot(xs, w3s, label="w1")
+    plt.plot(xs, w2s, label="w2")
+    plt.plot(xs, w3s, label="w3")
     plt.legend()
     plt.show()
 
@@ -92,17 +96,20 @@ def proportional_function_for_M(x):
     Zw_part = (alpha / (2 * np.pi)) ** (K / 2)
     return exp_G * exp_E * Zw_part
 
-num_iterations = 10
-# random choice now
-sigma=1
-# what do we do with x? do we first precompute the answer with the data?
-X, acceptance_ratio = metropolis_hastings(num_iterations, [1,1,1], 1, proportional_function_for_M)
 
-print(f"for sigma={sigma:.2f}, the ratio showing how many x were accepted: {acceptance_ratio:.4f}")
-plt.scatter(X[:, 0], X[:, 1])
-plt.xlabel('$x_1$')
-plt.ylabel('$x_2$')
-plt.title(rf'Elongated Gaussian, $\sigma$={sigma:.2f}, acceptance_ratio={acceptance_ratio:.4f}')
+def run_metro_hastings():
 
-plt.savefig(f'elongated_gaussian_{sigma}.png')
-plt.show()
+    num_iterations = 10
+    # random choice now
+    sigma=1
+    # what do we do with x? do we first precompute the answer with the data?
+    X, acceptance_ratio = metropolis_hastings(num_iterations, [1,1,1], 1, proportional_function_for_M)
+
+    print(f"for sigma={sigma:.2f}, the ratio showing how many x were accepted: {acceptance_ratio:.4f}")
+    plt.scatter(X[:, 0], X[:, 1])
+    plt.xlabel('$x_1$')
+    plt.ylabel('$x_2$')
+    plt.title(rf'Elongated Gaussian, $\sigma$={sigma:.2f}, acceptance_ratio={acceptance_ratio:.4f}')
+
+    plt.savefig(f'elongated_gaussian_{sigma}.png')
+    plt.show()
