@@ -11,7 +11,7 @@ def calc_E(x):
 
 
 # proposal function that is proportional to the one we want to sample Q(x)
-def proportional_function_exponent(x):
+def proportional_function_exponent(x, *args):
     return np.exp(-calc_E(x))
 
 

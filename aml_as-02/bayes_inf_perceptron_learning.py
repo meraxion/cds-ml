@@ -60,6 +60,15 @@ def M(w, x, labels, a, G:Callable, E:Callable, y:Callable):
 
 alpha = 0.1
 
+
+def plots(xs, w1s, w2s, w3s):
+
+    plt.plot(xs, w1s, label="w1")
+    plt.plot(xs, w2s, label="w2")
+    plt.plot(xs, w3s, label="w3")
+    plt.legend()
+    plt.show()
+
 def run_hmc(labels, xs):
     
     w0 = sps.multivariate_normal().rvs(xs.shape[1])
@@ -73,43 +82,49 @@ def run_hmc(labels, xs):
     ws, accepts = hmc(w0, post_energy, n_samples, eps, tau)
 
     w1s, w2s, w3s = ws[:,0], ws[:,1], ws[:,2]
-
     xs = np.arange(n_samples)
-    plt.plot(xs, w1s, label="w1")
-    plt.plot(xs, w2s, label="w2")
-    plt.plot(xs, w3s, label="w3")
-    plt.legend()
-    plt.show()
+
+    plots(xs, w1s, w2s, w3s)
 
     return ws, accepts
 
-run_hmc(labels, xs)
-
 # we don't need to use P(D|alpha) because it would cancel out in the acceptance ratio
-def proportional_function_for_M(x):
+def proportional_function_for_M(w, *args):
+    r = args[0]
+    labels, x = r[0]
     K = x.size
-    print(K)
     # maybe K+1 for bias
-    w = np.random.normal(K)
-    exp_G = np.exp(-G_calc(x, w))
+    # w = sps.multivariate_normal().rvs(xs.shape[1])
+    # w = np.random.multivariate_normal(x.shape, np.eye(K))
+    exp_G = np.exp(-G_calc(x, w, labels, y_function))
     exp_E = np.exp(-alpha * E_calc(w))
     Zw_part = (alpha / (2 * np.pi)) ** (K / 2)
     return exp_G * exp_E * Zw_part
 
 
-def run_metro_hastings():
+def run_metro_hastings(labels, xs):
 
-    num_iterations = 10
+    num_iterations = 10000
     # random choice now
     sigma=1
-    # what do we do with x? do we first precompute the answer with the data?
-    X, acceptance_ratio = metropolis_hastings(num_iterations, [1,1,1], 1, proportional_function_for_M)
+    w = sps.multivariate_normal().rvs(xs.shape[1])
+    X, acceptance_ratio = metropolis_hastings(num_iterations, w, 1, proportional_function_for_M, labels, xs)
+    # X, acceptance_ratio = metropolis_hastings(num_iterations, np.array([1,1,1]), 1, proportional_function_for_M, labels)
 
-    print(f"for sigma={sigma:.2f}, the ratio showing how many x were accepted: {acceptance_ratio:.4f}")
-    plt.scatter(X[:, 0], X[:, 1])
-    plt.xlabel('$x_1$')
-    plt.ylabel('$x_2$')
-    plt.title(rf'Elongated Gaussian, $\sigma$={sigma:.2f}, acceptance_ratio={acceptance_ratio:.4f}')
+    w1s, w2s, w3s = X[:, 0], X[:, 1], X[:, 2]
+    xs = np.arange(num_iterations)
 
-    plt.savefig(f'elongated_gaussian_{sigma}.png')
-    plt.show()
+    plots(xs, w1s, w2s, w3s)
+
+    # print(f"for sigma={sigma:.2f}, the ratio showing how many x were accepted: {acceptance_ratio:.4f}")
+    # plt.scatter(X[:, 0], X[:, 1])
+    # plt.xlabel('$x_1$')
+    # plt.ylabel('$x_2$')
+    # plt.title(rf'Bayesian inference problem, $\sigma$={sigma:.2f}, acceptance_ratio={acceptance_ratio:.4f}')
+    #
+    # plt.savefig(f'bayes_inf{sigma}.png')
+    # plt.show()
+
+
+run_hmc(labels, xs)
+# run_metro_hastings(labels, xs)
