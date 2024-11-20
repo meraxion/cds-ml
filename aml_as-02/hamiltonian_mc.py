@@ -27,6 +27,10 @@ def run_leapfrog(rho, g, x, eps, energy_fn:Callable, tau):
   def scan_step(carry, _):
     rho, g, x = carry
 
+    jax.debug.print("rho: {}", rho)
+    jax.debug.print("x: {}", x)
+    jax.debug.print("g: {}", g)
+
     rho = rho - 0.5 * eps * g
     x = x + eps*rho
     g = jax.grad(energy_fn)(x)
@@ -70,7 +74,7 @@ def hmc(x0:Array,
   e = energy_fn(x0)
 
   for i in tqdm(range(n_samples-1)):
-    key, gausskey, unifkey = jax.random.split(key, 3)
+    key, gausskey, unifkey = jr.split(key, 3)
     x_new = x.at[i].get()
     rho = jr.normal(gausskey, x.shape[1])
     g_new = g
@@ -114,8 +118,8 @@ def main():
     return 0.5 * x.T@A@x
    
   n_samples = 1000
-  eps = 0.01
-  Tau = 100
+  eps = 0.001
+  Tau = 50
 
   x0 = jnp.asarray([5., 3.])
 

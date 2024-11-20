@@ -19,11 +19,16 @@ xs = pd.read_csv('x.ext', sep=' ').to_numpy()[:-1].astype(float)
 @jax.jit
 def y_fn(x, w):
     wx = x @ w.T
+    # for numerical stability
+    wx = jnp.clip(wx, -50, 50)
     return 1 / (1 + jnp.exp(-wx))
 
 @jax.jit
 def G_calc(x, w, labels):
-    G = -labels * jnp.log(y_fn(x, w)) + (1 - labels) * jnp.log(1 - y_fn(x, w))
+    y = y_fn(x,w)  
+    y = jnp.clip(y, 1e-10, 1e10)
+
+    G = -labels * jnp.log(y) + (1 - labels) * jnp.log(1 - y)
     return jnp.sum(G)
 
 @jax.jit
