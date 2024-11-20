@@ -4,7 +4,6 @@ import jax.numpy as jnp
 import scipy.stats as sps
 import pandas as pd
 from matplotlib import pyplot as plt
-from jax.random import PRNGKey
 from typing import Callable
 from jax import Array
 
@@ -57,9 +56,9 @@ def plots(xs, w1s, w2s, w3s):
 def run_hmc(labels, xs):
     
     w0 = jnp.asarray(sps.multivariate_normal().rvs(xs.shape[1]))
-    n_samples = 100
-    eps = 0.01
-    tau = 100
+    n_samples = 1000
+    eps = 0.001
+    tau = 50
 
     # parameterizing W by these other values which we already know
     post_energy = lambda w: M(w, xs, labels, alpha)

@@ -27,10 +27,6 @@ def run_leapfrog(rho, g, x, eps, energy_fn:Callable, tau):
   def scan_step(carry, _):
     rho, g, x = carry
 
-    jax.debug.print("rho: {}", rho)
-    jax.debug.print("x: {}", x)
-    jax.debug.print("g: {}", g)
-
     rho = rho - 0.5 * eps * g
     x = x + eps*rho
     g = jax.grad(energy_fn)(x)
@@ -126,9 +122,11 @@ def main():
   print(f"Running Hamiltonian Monte Carlo sampling run with: {n_samples} samples, leapfrog step size {eps}, and leapfrog steps {Tau}")
   x, accepts = hmc(x0, E, n_samples, eps, Tau)
 
+  n_burn_in = int(len(x)) if len(x) < 1000 else 500
+
   print(f"""
         The mean (vector) of this Gaussian is: {jnp.mean(x, axis=0)}.
-        The mean (vector) of this Gaussian, discarding 500 steps of burn-in is: {jnp.mean(x[int(len(x)/2):], axis=0)}
+        The mean (vector) of this Gaussian, discarding {n_burn_in} steps of burn-in is: {jnp.mean(x[n_burn_in:], axis=0)}
         The final acceptance ratio was: {accepts[-1]}.
         """)
   print("fin")
