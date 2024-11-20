@@ -44,7 +44,7 @@ def hmc(x0:np.ndarray,
   x = np.zeros((n_samples, x0.shape[0]), dtype=np.float32)
   x[0] = x0
 
-  rho_dist = sps.multivariate_normal([0.,0.])
+  rho_dist = sps.multivariate_normal(np.zeros((x0.shape[0])))
   rho = rho_dist.rvs()
 
   g = jax.grad(energy_fn)(x0)

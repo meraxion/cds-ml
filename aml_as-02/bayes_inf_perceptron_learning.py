@@ -10,7 +10,9 @@
 # distribution. Investigate the acceptance ratio for both methods and try to optimize this
 # by varying the proposal distribution, the step size  in HMC and the number of leap
 # frog steps τ.
+import jax
 import numpy as np
+import jax.numpy as jnp
 import pandas as pd
 from matplotlib import pyplot as plt
 from typing import Callable
@@ -30,21 +32,20 @@ from hamiltonian_mc import hmc
 labels = pd.read_csv('t.ext').to_numpy()[:-1].astype(int)
 labels = np.atleast_2d(labels)
 xs = pd.read_csv('x.ext', sep=' ').to_numpy()[:-1].astype(float)
-print(labels)
 
 def y_function(x, w):
-    wx = w @ x
-    return 1 / (1 + np.exp(-wx))
+    wx = x @ w.T
+    return 1 / (1 + jnp.exp(-wx))
 
 def G_calc(x, w, labels, y:Callable):
     # -np.sum(label)
     # if using matrix multiplication, then we don't have to write sum'
-    G = -labels * np.log(y(x, w)) + (1 - labels) * np.log(1 - y(x, w))
+    G = -labels * jnp.log(y(x, w)) + (1 - labels) * jnp.log(1 - y(x, w))
 
-    return np.sum(G)
+    return jnp.sum(G)
 
 def E_calc(w):
-    return 1 / 2 * np.sum(w ** 2)
+    return 1 / 2 * jnp.sum(w ** 2)
 
 def M(w, x, labels, a, G:Callable, E:Callable, y:Callable):
     g = G(x, w, labels, y)
@@ -57,7 +58,7 @@ alpha = 0.1
 
 def run_hmc(labels, xs):
     
-    w0 = sps.multivariate_normal().rvs(3)
+    w0 = sps.multivariate_normal().rvs(xs.shape[1])
     n_samples = 100
     eps = 0.01
     tau = 100
@@ -73,6 +74,8 @@ def run_hmc(labels, xs):
     plt.plot(xs, w1s, label="w1")
     plt.plot(xs, w2s, label="w1")
     plt.plot(xs, w3s, label="w1")
+    plt.legend()
+    plt.show()
 
     return ws, accepts
 
@@ -99,7 +102,7 @@ print(f"for sigma={sigma:.2f}, the ratio showing how many x were accepted: {acce
 plt.scatter(X[:, 0], X[:, 1])
 plt.xlabel('$x_1$')
 plt.ylabel('$x_2$')
-plt.title(f'Elongated Gaussian, $\sigma$={sigma:.2f}, acceptance_ratio={acceptance_ratio:.4f}')
+plt.title(rf'Elongated Gaussian, $\sigma$={sigma:.2f}, acceptance_ratio={acceptance_ratio:.4f}')
 
 plt.savefig(f'elongated_gaussian_{sigma}.png')
 plt.show()
