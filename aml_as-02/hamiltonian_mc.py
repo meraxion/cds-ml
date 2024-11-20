@@ -2,9 +2,11 @@ import numpy as np
 import scipy.stats as sps
 import jax
 import jax.numpy as jnp
+import jax.random as jr
 from jax import Array
 from typing import Callable
 from tqdm import tqdm
+from jax.random import PRNGKey
 """Pseudocode:
  - Choose initial x1
  - for t = 1 : T:
@@ -39,6 +41,7 @@ def hmc(x0:Array,
         n_samples:int,
         eps:float = 0.01,
         tau:int   = 1000,
+        key:Array = PRNGKey(13)
         ) -> tuple[Array, Array]:
   """
   Run Hamiltonian Monte Carlo sampling
@@ -62,15 +65,14 @@ def hmc(x0:Array,
   x = x.at[0].set(x0)
   # x[0] = x0
 
-  rho_dist = sps.multivariate_normal(jnp.zeros((x0.shape[0])))
-  rho = rho_dist.rvs()
 
   g = jax.grad(energy_fn)(x0)
   e = energy_fn(x0)
 
   for i in tqdm(range(n_samples-1)):
-    x_new = x[i].copy()
-    rho = rho_dist.rvs()
+    key, gausskey, unifkey = jax.random.split(key, 3)
+    x_new = x.at[i].get()
+    rho = jr.normal(gausskey, x.shape[1])
     g_new = g
     H = hamiltonian(e, rho)
 
@@ -83,7 +85,7 @@ def hmc(x0:Array,
     if dH < 0:
       accept = 1
       num_accepts += 1
-    elif jnp.random.rand() < jnp.exp(-dH):
+    elif jr.uniform(unifkey) < jnp.exp(-dH):
       accept = 1
       num_accepts += 1
     else:
