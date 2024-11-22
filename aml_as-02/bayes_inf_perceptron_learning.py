@@ -91,12 +91,12 @@ def run_hmc(labels, xs):
     # parameterizing W by these other values which we already know
     post_energy = lambda w: M(w, xs, labels, alpha)
 
-    ws, accepts = hmc(w0, post_energy, n_samples, eps, tau)
+    ws, accepts, M_result, G_result = hmc(w0, post_energy, n_samples, eps, tau)
 
     w1s, w2s, w3s = ws[:,0], ws[:,1], ws[:,2]
     xs = np.arange(n_samples)
 
-    plots(xs, w1s, w2s, w3s)
+    plots(xs, w1s, w2s, w3s, M_result, G_result)
 
     return ws, accepts
 

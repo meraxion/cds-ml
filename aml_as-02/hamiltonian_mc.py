@@ -69,6 +69,9 @@ def hmc(x0:Array,
   g = df(x0)
   e = energy_fn(x0)
 
+  Mw = np.zeros(n_samples)
+  Gw = np.zeros(n_samples)
+
   for i in tqdm(range(n_samples-1)):
     key, gausskey, unifkey = jr.split(key, 3)
     x_new = x.at[i].get()
@@ -79,7 +82,9 @@ def hmc(x0:Array,
     # run leapfrog
     rho, g_new, x_new = run_leapfrog(rho, g_new, x_new, eps, energy_fn, df, tau)
     
-    e_new = energy_fn(x_new)
+    e_new, G_result = energy_fn(x_new)
+    Mw[i] = e_new
+    Gw[i] = G_result
     H_new = hamiltonian(e_new, rho)
     dH = (H_new - H)
     if dH < 0:
@@ -98,7 +103,7 @@ def hmc(x0:Array,
       x = x.at[i+1].set(x[i].copy())
     accept_ratios = accept_ratios.at[i].set(num_accepts/(i+1))
 
-  return x, accept_ratios
+  return x, accept_ratios, Mw, Gw
 
 def main():
   """
