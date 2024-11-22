@@ -65,7 +65,8 @@ def hmc(x0:Array,
   x = x.at[0].set(x0)
   # x[0] = x0
 
-  g = jax.grad(energy_fn)(x0)
+  df = jax.grad(energy_fn)
+  g = df(x0)
   e = energy_fn(x0)
 
   for i in tqdm(range(n_samples-1)):

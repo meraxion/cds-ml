@@ -42,10 +42,12 @@ def M(w, x, labels, a):
     m = g + a*e
     k = len(w)
     z = jnp.power((a/2*jnp.pi), k/2)
-    return -m*z
+    result = -m * z
+    return result, -g
 
 alpha = 0.1
 
+# def plots(xs, w1s, w2s, w3s):
 def plots(xs, w1s, w2s, w3s, Mw, Gw):
     plt.plot(xs, w1s, label="w1")
     plt.plot(xs, w2s, label="w2")
@@ -66,7 +68,7 @@ def plots(xs, w1s, w2s, w3s, Mw, Gw):
     plt.plot(xs, Gw)
     plt.xlabel('number of iterations')
     plt.ylabel('G(w)')
-    plt.ylim(-15, 15)
+    # plt.ylim(-10, 10)
     plt.legend()
     plt.title('The error function G(w) as a function of number of iterations')
     plt.show()
@@ -74,7 +76,7 @@ def plots(xs, w1s, w2s, w3s, Mw, Gw):
     plt.plot(xs, Mw)
     plt.xlabel('number of iterations')
     plt.ylabel('M(w)')
-    plt.ylim(-15, 15)
+    # plt.ylim(-10, 10)
     plt.legend()
     plt.title('The objective function M(w) as a function of number of iterations')
     plt.show()
@@ -114,11 +116,12 @@ def proportional_function_for_M(w, *args):
 
 def run_metro_hastings(labels, xs):
 
-    num_iterations = 10000
+    num_iterations = 40000
     # assumption
     sigma = 1
     w = sps.multivariate_normal().rvs(xs.shape[1])
-    X, acceptance_ratio, result_array = metropolis_hastings(num_iterations, w, sigma, proportional_function_for_M, labels, xs)
+    X, acceptance_ratio, result_array = metropolis_hastings(num_iterations, w, sigma, M, xs, labels, alpha)
+    # X, acceptance_ratio, result_array = metropolis_hastings(num_iterations, w, sigma, proportional_function_for_M, labels, xs)
 
     w1s, w2s, w3s = X[:, 0], X[:, 1], X[:, 2]
     xs = np.arange(num_iterations)
@@ -126,5 +129,5 @@ def run_metro_hastings(labels, xs):
     plots(xs, w1s, w2s, w3s, result_array[:, 0], result_array[:, 1])
 
 
-# run_hmc(labels, xs)
-run_metro_hastings(labels, xs)
+run_hmc(labels, xs)
+# run_metro_hastings(labels, xs)
