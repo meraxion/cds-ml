@@ -94,18 +94,15 @@ HMC_accepts = []
 def run_hmc(labels, xs):
 
     w0 = jnp.asarray(sps.multivariate_normal().rvs(xs.shape[1]))
-    n_samples = 200
+    n_samples = 3000
 
-    epss = [0.01]
-    # epss = [0.01, 0.001, 0.0005]
-    taus = [5, 100]
-    # taus = [5, 10, 25, 50, 100]
-    num_iterations = 100
+    epss = [0.01, 0.001, 0.0005]
+    taus = [5, 10, 25, 50, 100]
 
     for eps in epss:
         for tau in taus:
             print(
-                f"Running Hamiltonian Monte Carlo sampling run with: {num_iterations} samples, leapfrog step size {eps}, and leapfrog steps {tau}")
+                f"Running Hamiltonian Monte Carlo sampling run with: {n_samples} samples, leapfrog step size {eps}, and leapfrog steps {tau}")
             start = time.time()
 
             # parameterizing W by these other values which we already know
@@ -151,7 +148,7 @@ MHMC_accepts = []
 
 def run_metro_hastings(labels, xs):
 
-    num_iterations = 1000
+    num_iterations = 40000
     sigmas = np.logspace(-4, 1, 10)
 
     for sigma in sigmas:
