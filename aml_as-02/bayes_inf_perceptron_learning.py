@@ -58,6 +58,7 @@ def plots(xs, w1s, w2s, w3s, Mw, Gw, title):
     plt.ylabel('weight value')
 
     plt.title(title+',\n Evolution of weights w0, w1 and w2 as a function of number of iterations')
+    plt.savefig(title + 'Evolution of weights w0, w1 and w2 as a function of number of iterations.png')
     plt.show()
 
     plt.scatter(w1s, w2s, s=2)
@@ -94,7 +95,7 @@ HMC_accepts = []
 def run_hmc(labels, xs):
 
     w0 = jnp.asarray(sps.multivariate_normal().rvs(xs.shape[1]))
-    n_samples = 3000
+    n_samples = 1500
 
     epss = [0.01, 0.001, 0.0005]
     taus = [5, 10, 25, 50, 100]
@@ -124,7 +125,7 @@ def run_hmc(labels, xs):
             w1s, w2s, w3s = ws[:,0], ws[:,1], ws[:,2]
             xss = np.arange(n_samples)
 
-            plots(xss, w1s, w2s, w3s, M_result, G_result, f'HMC with eps={eps} and tau={tau}')
+            plots(xss, w1s, w2s, w3s, M_result, G_result, f'HMC with eps={eps} and tau={tau} and acceptance rate={accepts:.4f}')
 
 
 
@@ -149,7 +150,7 @@ MHMC_accepts = []
 def run_metro_hastings(labels, xs):
 
     num_iterations = 40000
-    sigmas = np.logspace(-4, 1, 10)
+    sigmas = np.logspace(-4, 0, 9)
 
     for sigma in sigmas:
         start = time.time()
@@ -167,7 +168,7 @@ def run_metro_hastings(labels, xs):
         w1s, w2s, w3s = X[:, 0], X[:, 1], X[:, 2]
         xss = np.arange(num_iterations)
         result_array = np.array(result_array)
-        plots(xss, w1s, w2s, w3s, result_array[:, 0], result_array[:, 1], f'Metropolis Hastings with sigma={sigma:.4f}')
+        plots(xss, w1s, w2s, w3s, result_array[:, 0], result_array[:, 1], f'Metropolis Hastings with sigma={sigma:.4f} and acceptance rate={acceptance_ratio:.4f}')
 
 
 run_metro_hastings(labels, xs)
