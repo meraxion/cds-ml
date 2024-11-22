@@ -94,11 +94,11 @@ HMC_accepts = []
 def run_hmc(labels, xs):
     
     w0 = jnp.asarray(sps.multivariate_normal().rvs(xs.shape[1]))
-    n_samples = 2000
+    n_samples = 100
 
     epss = [0.01]
     # epss = [0.01, 0.001, 0.0005]
-    taus = [5,100]
+    taus = [5, 100]
     # taus = [5, 10, 25, 50, 100]
     num_iterations = 100
 
@@ -108,27 +108,26 @@ def run_hmc(labels, xs):
                 f"Running Hamiltonian Monte Carlo sampling run with: {num_iterations} samples, leapfrog step size {eps}, and leapfrog steps {tau}")
             start = time.time()
 
-        # parameterizing W by these other values which we already know
-        g = lambda w: G_calc(xs, w, labels)
-        post_energy = lambda w: M(w, xs, labels, alpha)
+            # parameterizing W by these other values which we already know
+            g = lambda w: G_calc(xs, w, labels)
+            post_energy = lambda w: M(w, xs, labels, alpha)
 
-        ws, accepts, M_result, G_result = hmc(w0, post_energy, g, n_samples, eps, tau)
+            ws, accepts, M_result, G_result = hmc(w0, post_energy, g, n_samples, eps, tau)
 
-        end = time.time()
-        runtime = end - start
-        HMC_runtimes.append(runtime)
-        HMC_accepts.append(accepts[-1])
+            end = time.time()
+            runtime = end - start
+            HMC_runtimes.append(runtime)
+            HMC_accepts.append(accepts[-1])
 
-        # NO BURN-IN!
-        mean = np.mean(ws, axis=0)
-        HMC_means.append(mean)
-        print('Means: ', HMC_means)
+            # NO BURN-IN!
+            mean = np.mean(ws, axis=0)
+            HMC_means.append(mean)
 
 
-        w1s, w2s, w3s = ws[:,0], ws[:,1], ws[:,2]
-        xs = np.arange(n_samples)
+            w1s, w2s, w3s = ws[:,0], ws[:,1], ws[:,2]
+            xs = np.arange(n_samples)
 
-        plots(xs, w1s, w2s, w3s, M_result, G_result, 'HMC')
+            plots(xs, w1s, w2s, w3s, M_result, G_result, f'HMC with eps={eps} and tau={tau}')
 
 
 
@@ -166,7 +165,6 @@ def run_metro_hastings(labels, xs):
 
         mean = np.mean(X, axis=0)
         MHMC_means.append(mean)
-        print('Means: ', MHMC_means)
         print(f"for sigma={sigma:.2f}, the ratio showing how many x were accepted: {acceptance_ratio:.4f}")
 
         w1s, w2s, w3s = X[:, 0], X[:, 1], X[:, 2]
@@ -175,7 +173,7 @@ def run_metro_hastings(labels, xs):
         plots(xss, w1s, w2s, w3s, result_array[:, 0], result_array[:, 1], f'Metropolis Hastings with sigma={sigma:.4f}')
 
 
-run_metro_hastings(labels, xs)
+# run_metro_hastings(labels, xs)
 run_hmc(labels, xs)
 
 
