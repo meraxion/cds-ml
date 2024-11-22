@@ -21,7 +21,6 @@ For Metropolis Hastings:
 - Compute the mean, and compare the accuracy as a function of the computation time
 """
 num_iterations = 10000
-# where to get these from? or they're completely random?
 x_init = np.array([0., 0.])
 sigmas = np.linspace(0, 1, 10)
 MHMC_runtimes = []
@@ -63,6 +62,7 @@ HMC_means    = []
 HMC_accepts  = []
 
 epss = [0.01, 0.001, 0.0001]
+# epss = [0.01, 0.001, 0.0005]
 taus = [5, 10, 25, 50, 100]
 num_iterations = 1000
 

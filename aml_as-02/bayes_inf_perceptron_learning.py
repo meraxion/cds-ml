@@ -9,7 +9,7 @@ from jax import Array
 
 from metropolis_hastings import metropolis_hastings
 from hamiltonian_mc import hmc
-
+import time
 
 labels = pd.read_csv('t.ext').to_numpy()[:-1].astype(int)
 labels = np.atleast_2d(labels)
@@ -43,91 +43,149 @@ def M(w, x, labels, a):
     k = len(w)
     z = jnp.power((a/2*jnp.pi), k/2)
     result = -m * z
-    return result, -g
+    return result
 
 alpha = 0.1
 
 # def plots(xs, w1s, w2s, w3s):
-def plots(xs, w1s, w2s, w3s, Mw, Gw):
+def plots(xs, w1s, w2s, w3s, Mw, Gw, title):
+    print(Mw)
+    print(Gw)
     plt.plot(xs, w1s, label="w1")
     plt.plot(xs, w2s, label="w2")
     plt.plot(xs, w3s, label="w3")
     plt.xlabel('number of iterations')
     plt.ylabel('weight value')
-    plt.legend()
-    plt.title('Evolution of weights w0, w1 and w2 as a function of number of iterations')
+
+    plt.title(title+',\n Evolution of weights w0, w1 and w2 as a function of number of iterations')
     plt.show()
 
     plt.scatter(w1s, w2s, s=2)
     plt.ylabel('w2')
     plt.xlabel('w1')
-    plt.title('Evolution of weights w1 and w2 in weight space')
-    plt.legend()
+    plt.title(title+',\n Evolution of weights w1 and w2 in weight space')
+
+    plt.savefig(title+'Evolution of weights w1 and w2 in weight space.png')
     plt.show()
+
 
     plt.plot(xs, Gw)
     plt.xlabel('number of iterations')
     plt.ylabel('G(w)')
-    # plt.ylim(-10, 10)
-    plt.legend()
-    plt.title('The error function G(w) as a function of number of iterations')
+
+
+    plt.title(title+',\n The error function G(w) as a function of number of iterations')
+    plt.savefig(title + 'The error function G(w) as a function of number of iterations.png')
     plt.show()
 
     plt.plot(xs, Mw)
     plt.xlabel('number of iterations')
     plt.ylabel('M(w)')
-    # plt.ylim(-10, 10)
-    plt.legend()
-    plt.title('The objective function M(w) as a function of number of iterations')
+
+
+    plt.title(title+',\n The objective function M(w) as a function of number of iterations')
+    plt.savefig(title + 'The objective function M(w) as a function of number of iterations.png')
     plt.show()
 
 def run_hmc(labels, xs):
     
     w0 = jnp.asarray(sps.multivariate_normal().rvs(xs.shape[1]))
-    n_samples = 1000
+    n_samples = 2000
     eps = 0.001
     tau = 50
 
     # parameterizing W by these other values which we already know
+    g = lambda w: G_calc(xs, w, labels)
     post_energy = lambda w: M(w, xs, labels, alpha)
 
-    ws, accepts, M_result, G_result = hmc(w0, post_energy, n_samples, eps, tau)
+    ws, accepts, M_result, G_result = hmc(w0, post_energy, g, n_samples, eps, tau)
 
     w1s, w2s, w3s = ws[:,0], ws[:,1], ws[:,2]
     xs = np.arange(n_samples)
 
-    plots(xs, w1s, w2s, w3s, M_result, G_result)
+    plots(xs, w1s, w2s, w3s, M_result, G_result, 'HMC')
 
     return ws, accepts
 
-# we don't need to use P(D|alpha) because it would cancel out in the acceptance ratio
-def proportional_function_for_M(w, *args):
-    r = args[0]
-    labels, x = r[0]
 
-    K = x.size
+@jax.jit
+def proportional_function_for_M(w, x, labels, a):
+    g = G_calc(x, w, labels)
+    e = E_calc(w)
 
-    # calculating M
-    exp_G = np.exp(-G_calc(x, w, labels))
-    exp_E = np.exp(-alpha * E_calc(w))
-    Zw_part = (alpha / (2 * np.pi)) ** (K / 2)
-    return exp_G * exp_E * Zw_part, exp_G
+    m = g + a * e
+    k = len(w)
+    z = jnp.power((a / 2 * jnp.pi), k / 2)
+    result = -m * z
+    return result, -g
+
 
 
 def run_metro_hastings(labels, xs):
 
     num_iterations = 40000
-    # assumption
-    sigma = 1
-    w = sps.multivariate_normal().rvs(xs.shape[1])
-    X, acceptance_ratio, result_array = metropolis_hastings(num_iterations, w, sigma, M, xs, labels, alpha)
-    # X, acceptance_ratio, result_array = metropolis_hastings(num_iterations, w, sigma, proportional_function_for_M, labels, xs)
+    sigmas = np.logspace(0.0001, 1, 10)
+    MHMC_runtimes = []
+    MHMC_means = []
+    MHMC_accepts = []
+    for sigma in sigmas:
+        start = time.time()
+        w = sps.multivariate_normal().rvs(xs.shape[1])
+        X, acceptance_ratio, result_array = metropolis_hastings(num_iterations, w, sigma, proportional_function_for_M, xs, labels, alpha)
+        end = time.time()
+        runtime = end - start
+        MHMC_runtimes.append(runtime)
+        MHMC_accepts.append(acceptance_ratio)
 
-    w1s, w2s, w3s = X[:, 0], X[:, 1], X[:, 2]
-    xs = np.arange(num_iterations)
-    result_array = np.array(result_array)
-    plots(xs, w1s, w2s, w3s, result_array[:, 0], result_array[:, 1])
+        mean = np.mean(X, axis=0)
+        MHMC_means.append(mean)
+
+        print(f"for sigma={sigma:.2f}, the ratio showing how many x were accepted: {acceptance_ratio:.4f}")
+        plt.scatter(X[:, 0], X[:, 1])
+        plt.xlabel('$x_1$')
+        plt.ylabel('$x_2$')
+        plt.title(rf'Bayesian inference for perceptron learning, $\sigma$={sigma:.4f}, acceptance_ratio={acceptance_ratio:.4f}')
+
+        # plt.savefig(f'elongated_gaussian_{sigma}.png')
+        plt.show()
+
+        w1s, w2s, w3s = X[:, 0], X[:, 1], X[:, 2]
+        xss = np.arange(num_iterations)
+        result_array = np.array(result_array)
+        plots(xss, w1s, w2s, w3s, result_array[:, 0], result_array[:, 1], f'Metropolis Hastings with sigma={sigma:.4f}')
 
 
-run_hmc(labels, xs)
-# run_metro_hastings(labels, xs)
+run_metro_hastings(labels, xs)
+# run_hmc(labels, xs)
+
+
+
+# MHMC_mean_errors = (np.asarray(MHMC_means) - np.zeros((len(MHMC_means), 2)))**2
+# HMC_mean_errors  = (np.asarray(HMC_means) - np.zeros((len(HMC_means), 2)))**2
+#
+# # compare the accuracy as a function of the computation time
+# plt.scatter(MHMC_runtimes, MHMC_mean_errors[:, 0], marker='o', label="MH - dim 1", color='cyan', alpha = 0.5)
+# plt.scatter(MHMC_runtimes, MHMC_mean_errors[:, 1], marker='s', label="MH - dim 2", color='blue', alpha = 0.5)
+# plt.scatter(HMC_runtimes, HMC_mean_errors[:,0], marker="o", label="HMC - dim 1", color = "magenta", alpha = 0.5)
+# plt.scatter(HMC_runtimes, HMC_mean_errors[:,1], marker="s", label="HMC - dim 2", color = "yellow", alpha = 0.5)
+# plt.xlabel("Empirical runtime (clock time)")
+# plt.ylabel("Estimated mean error")
+# plt.xscale("log")
+# plt.yscale("log")
+# plt.title("Accuracy as a function of computation time")
+# plt.legend()
+# plt.show()
+#
+# plt.clf()
+#
+# plt.figure(figsize=(10,6))
+# x_mh = np.random.normal(-0.3, 0.04, size=len(MHMC_accepts))
+# x_hmc = np.random.normal(0.3, 0.04, size=len(HMC_accepts))
+#
+# plt.scatter(x_mh, MHMC_accepts, alpha=0.5, label='Metropolis Hastings')
+# plt.scatter(x_hmc, HMC_accepts, alpha=0.5, label='Hamiltonian')
+# plt.xticks([-0.3, 0.3], ["Metropolis Hastings", "Hamiltonian"])
+# plt.xlim(-0.5, 0.5)
+# plt.ylabel("Acceptance Ratio")
+# plt.title("Distribution of Acceptance Rates by Sampler")
+# plt.legend()

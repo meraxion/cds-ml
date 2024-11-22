@@ -38,6 +38,7 @@ def run_leapfrog(rho, g, x, eps, energy_fn:Callable, df:Callable, tau):
 
 def hmc(x0:Array,
         energy_fn:Callable[[Array], float],
+        G_fn:Callable[[Array], float],
         n_samples:int,
         eps:float = 0.01,
         tau:int   = 1000,
@@ -65,9 +66,10 @@ def hmc(x0:Array,
   x = x.at[0].set(x0)
   # x[0] = x0
 
+  # g_result = G_fn(x0)
   df = jax.grad(energy_fn)
   g = df(x0)
-  e = energy_fn(x0)
+  e  = energy_fn(x0)
 
   Mw = np.zeros(n_samples)
   Gw = np.zeros(n_samples)
@@ -82,7 +84,8 @@ def hmc(x0:Array,
     # run leapfrog
     rho, g_new, x_new = run_leapfrog(rho, g_new, x_new, eps, energy_fn, df, tau)
     
-    e_new, G_result = energy_fn(x_new)
+    e_new = energy_fn(x_new)
+    G_result = G_fn(x_new)
     Mw[i] = e_new
     Gw[i] = G_result
     H_new = hamiltonian(e_new, rho)
@@ -103,7 +106,11 @@ def hmc(x0:Array,
       x = x.at[i+1].set(x[i].copy())
     accept_ratios = accept_ratios.at[i].set(num_accepts/(i+1))
 
-  return x, accept_ratios, Mw, Gw
+  e_new = energy_fn(x[-1])
+  G_result = G_fn(x[-1])
+  Mw[-1] = e_new
+  Gw[-1] = G_result
+  return x, accept_ratios, Mw, -Gw
 
 def main():
   """
