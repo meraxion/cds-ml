@@ -20,7 +20,7 @@ from jax.random import PRNGKey
 def hamiltonian(e:float, p:float):
   return e + jnp.dot(p.T, p)/2
 
-def run_leapfrog(rho, g, x, eps, energy_fn:Callable, tau):
+def run_leapfrog(rho, g, x, eps, energy_fn:Callable, df:Callable, tau):
   """
   Doing this for closure reasons
   """
@@ -29,7 +29,7 @@ def run_leapfrog(rho, g, x, eps, energy_fn:Callable, tau):
 
     rho = rho - 0.5 * eps * g
     x = x + eps*rho
-    g = jax.grad(energy_fn)(x)
+    g = df(x)
     rho = rho - 0.5 * eps * g
 
     return (rho, g, x), None
@@ -77,7 +77,7 @@ def hmc(x0:Array,
     H = hamiltonian(e, rho)
 
     # run leapfrog
-    rho, g_new, x_new = run_leapfrog(rho, g_new, x_new, eps, energy_fn, tau)
+    rho, g_new, x_new = run_leapfrog(rho, g_new, x_new, eps, energy_fn, df, tau)
     
     e_new = energy_fn(x_new)
     H_new = hamiltonian(e_new, rho)
