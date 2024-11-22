@@ -92,9 +92,9 @@ HMC_runtimes = []
 HMC_means = []
 HMC_accepts = []
 def run_hmc(labels, xs):
-    
+
     w0 = jnp.asarray(sps.multivariate_normal().rvs(xs.shape[1]))
-    n_samples = 100
+    n_samples = 200
 
     epss = [0.01]
     # epss = [0.01, 0.001, 0.0005]
@@ -125,9 +125,9 @@ def run_hmc(labels, xs):
 
 
             w1s, w2s, w3s = ws[:,0], ws[:,1], ws[:,2]
-            xs = np.arange(n_samples)
+            xss = np.arange(n_samples)
 
-            plots(xs, w1s, w2s, w3s, M_result, G_result, f'HMC with eps={eps} and tau={tau}')
+            plots(xss, w1s, w2s, w3s, M_result, G_result, f'HMC with eps={eps} and tau={tau}')
 
 
 
@@ -173,7 +173,7 @@ def run_metro_hastings(labels, xs):
         plots(xss, w1s, w2s, w3s, result_array[:, 0], result_array[:, 1], f'Metropolis Hastings with sigma={sigma:.4f}')
 
 
-# run_metro_hastings(labels, xs)
+run_metro_hastings(labels, xs)
 run_hmc(labels, xs)
 
 
