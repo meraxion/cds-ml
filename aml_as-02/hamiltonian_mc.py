@@ -132,7 +132,7 @@ def main():
   x0 = jnp.asarray([5., 3.])
 
   print(f"Running Hamiltonian Monte Carlo sampling run with: {n_samples} samples, leapfrog step size {eps}, and leapfrog steps {Tau}")
-  x, accepts = hmc(x0, E, n_samples, eps, Tau)
+  x, accepts, _ = hmc(x0, E, E, n_samples, eps, Tau)
 
   n_burn_in = int(len(x)) if len(x) < 1000 else 500
 

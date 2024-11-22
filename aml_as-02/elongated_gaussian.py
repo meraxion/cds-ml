@@ -12,7 +12,7 @@ def calc_E(x):
 
 # proposal function that is proportional to the one we want to sample Q(x)
 def proportional_function_exponent(x, *args):
-    return np.exp(-calc_E(x))
+    return np.exp(-calc_E(x)), 0
 
 """
 For Metropolis Hastings:
@@ -20,16 +20,16 @@ For Metropolis Hastings:
 - Report the optimal values
 - Compute the mean, and compare the accuracy as a function of the computation time
 """
-num_iterations = 10000
+num_iterations = 30000
 x_init = np.array([0., 0.])
-sigmas = np.linspace(0, 1, 10)
+sigmas = np.logspace(-4, 1, 10)
 MHMC_runtimes = []
 MHMC_means    = []
 MHMC_accepts  = []
 for sigma in sigmas:
 
     start = time.time()
-    X, acceptance_ratio = metropolis_hastings(num_iterations, x_init, sigma, proportional_function_exponent)
+    X, acceptance_ratio, _ = metropolis_hastings(num_iterations, x_init, sigma, proportional_function_exponent)
     end = time.time()
     runtime = end - start
     MHMC_runtimes.append(runtime)
@@ -38,11 +38,11 @@ for sigma in sigmas:
     mean = np.mean(X, axis=0)
     MHMC_means.append(mean)
 
-    print(f"for sigma={sigma:.2f}, the ratio showing how many x were accepted: {acceptance_ratio:.4f}")
+    print(f"for sigma={sigma:.4f}, the ratio showing how many x were accepted: {acceptance_ratio:.4f}")
     plt.scatter(X[:, 0], X[:, 1])
     plt.xlabel('$x_1$')
     plt.ylabel('$x_2$')
-    plt.title(rf'Elongated Gaussian, $\sigma$={sigma:.2f}, acceptance_ratio={acceptance_ratio:.4f}')
+    plt.title(rf'Elongated Gaussian, $\sigma$={sigma:.4f}, acceptance_ratio={acceptance_ratio:.4f}')
 
     # plt.savefig(f'elongated_gaussian_{sigma}.png')
     plt.show()
@@ -61,16 +61,16 @@ HMC_runtimes = []
 HMC_means    = []
 HMC_accepts  = []
 
-epss = [0.01, 0.001, 0.0001]
+epss = [0.01, 0.001, 0.0005]
 # epss = [0.01, 0.001, 0.0005]
-taus = [5, 10, 25, 50, 100]
+taus = [5, 10, 25, 50]
 num_iterations = 1000
 
 for eps in epss:
     for tau in taus:
         print(f"Running Hamiltonian Monte Carlo sampling run with: {num_iterations} samples, leapfrog step size {eps}, and leapfrog steps {tau}")
         start = time.time()
-        y, accepts = hmc(x_init, calc_E, num_iterations, eps, tau)
+        y, accepts, _, _ = hmc(x_init, calc_E, calc_E, num_iterations, eps, tau)
         end = time.time()
         runtime = end - start
         HMC_runtimes.append(runtime)
