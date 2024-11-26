@@ -1,7 +1,8 @@
 import numpy as np
 from scipy import sparse
+import typing
 
-def make_data():
+def make_data(frustrated:bool=True):
     # Set the random seed
     np.random.seed(0)
     n = 500
@@ -28,8 +29,13 @@ def make_data():
     # Symmetrize the matrix to make it symmetric
     w = w_upper + w_upper.T - sparse.diags(w_upper.diagonal())
 
-    # Apply (w > 0) - (w < 0) to define a frustrated system
-    w = (w > 0).astype(int) - (w < 0).astype(int)
+    if frustrated:
+        #  Apply (w > 0) - (w < 0) to define a frustrated system
+        w = (w > 0).astype(int) - (w < 0).astype(int)
+    else:
+        # this choice defines a ferro-magnetic (easy) system
+        w = ( w > 0).astype(int)
+
 
     # Remove diagonal entries by setting them to zero
     w.setdiag(0)
