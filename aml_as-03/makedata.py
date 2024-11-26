@@ -36,7 +36,6 @@ def make_data(frustrated:bool=True):
         # this choice defines a ferro-magnetic (easy) system
         w = ( w > 0).astype(int)
 
-
     # Remove diagonal entries by setting them to zero
     w.setdiag(0)
     return w

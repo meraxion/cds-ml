@@ -6,6 +6,7 @@ import numpy as np
 import jax.numpy as jnp
 import jax.random as jr
 from jax import jit
+from jax import Array
 from functools import partial
 
 from makedata import make_data
@@ -108,11 +109,14 @@ def N_num_runs(key, num_runs, K, R, data, vec_len, num_iterations):
 
     return energies, states
 
+def threshold(mean, std_dev, eps):
+    return std_dev > jnp.abs(mean)*eps
+
 def main():
     save = False
     # save = True
     vec_len = 500
-    num_iterations = 5000
+    num_iterations = 7500
     num_runs = 20
     # neighbourhood
     R = 1
@@ -121,13 +125,54 @@ def main():
     key = jr.PRNGKey(35)
 
     # a) for both ferromagnetic and frustrated, find number of restarts K needed to obtain reproducible results
+    max_K = 5000
+    eps = 0.01 # 1%
+
+    # ferro-magnetic
+    data = jnp.array(make_data(frustrated=False).toarray())
+     
+    print(f"Starting a) for ferro-magnetic system, with N = {num_runs} runs")
+    for K in range(2, max_K):
+        key, subkey = jr.split(key)
+        start = time.time()
+        energies, states = N_num_runs(subkey, num_runs, K, R, data, vec_len, num_iterations)
+        end = time.time()
+        runtime = end-start
+        runtime /= num_runs
+
+        mean_E = jnp.mean(energies)
+        SD_E   = std_dev(mean_E, energies)
+
+        if threshold(mean_E, SD_E, eps):
+            print(f"Reproduced state at K={K}")
+            print(f"Energy of the final solution was: {mean_E}")
+            print(f"Standard Deviation of the final solution was: {SD_E}")
+
+    # frustrated
+    data = jnp.array(make_data().toarray())
+
+    print(f"Starting a) for frustrated system, with N = {num_runs} runs")
+    for K in range(2, max_K):
+        key, subkey = jr.split(key)
+        start = time.time()
+        energies, states = N_num_runs(subkey, num_runs, K, R, data, vec_len, num_iterations)
+        end = time.time()
+        runtime = end-start
+        runtime /= num_runs
+
+        mean_E = jnp.mean(energies)
+        SD_E   = std_dev(mean_E, energies)
+
+        if threshold(mean_E, SD_E, eps):
+            print(f"Reproduced state at K={K}")
+            print(f"Energy of the final solution was: {mean_E}")
+            print(f"Standard Deviation of the final solution was: {SD_E}")   
 
     # b) for frustrated 
-
     results = []
 
     # make frustrated data
-    data = make_data().toarray()
+    data = jnp.array(make_data().toarray())
 
     # Ks = [20, 100, 200, 500, 1000, 2000, 4000]
     # Ks = [20, 100, 200, 500]
