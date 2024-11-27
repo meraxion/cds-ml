@@ -8,6 +8,7 @@ import jax.random as jr
 from jax import jit
 from jax import Array
 from functools import partial
+from tqdm import tqdm
 
 from makedata import make_data
 
@@ -27,7 +28,7 @@ def get_neighbour(key, state, R):
     return new_state
 
 @partial(jit, static_argnums = 1)
-def sample_state(key, n:int):
+def reset(key, n:int):
     """
     samples a starting state of shape (n,), where all values of the state are -1 or 1
     """
@@ -69,7 +70,7 @@ def track_min_energy_state(curr_min_e, curr_min_state, new_energies, new_states)
 
 @partial(jit, static_argnums = [2, 3])
 def iterative_improvement(key, data, vec_len, R, num_iterations):
-    state = sample_state(key, vec_len)
+    state = reset(key, vec_len)
 
     def body_fun(i, carry):
         state, key = carry
@@ -110,13 +111,13 @@ def N_num_runs(key, num_runs, K, R, data, vec_len, num_iterations):
     return energies, states
 
 def threshold(mean, std_dev, eps):
-    return std_dev > jnp.abs(mean)*eps
+    return std_dev < jnp.abs(mean)*eps
 
 def main():
-    save = False
-    # save = True
+    # save = False
+    save = True
     vec_len = 500
-    num_iterations = 7500
+    num_iterations = 100
     num_runs = 20
     # neighbourhood
     R = 1
@@ -132,7 +133,7 @@ def main():
     data = jnp.array(make_data(frustrated=False).toarray())
      
     print(f"Starting a) for ferro-magnetic system, with N = {num_runs} runs")
-    for K in range(2, max_K):
+    for K in tqdm(range(50, max_K, 50)):
         key, subkey = jr.split(key)
         start = time.time()
         energies, states = N_num_runs(subkey, num_runs, K, R, data, vec_len, num_iterations)
@@ -152,7 +153,7 @@ def main():
     data = jnp.array(make_data().toarray())
 
     print(f"Starting a) for frustrated system, with N = {num_runs} runs")
-    for K in range(2, max_K):
+    for K in tqdm(range(50, max_K, 50)):
         key, subkey = jr.split(key)
         start = time.time()
         energies, states = N_num_runs(subkey, num_runs, K, R, data, vec_len, num_iterations)
@@ -172,11 +173,11 @@ def main():
     results = []
 
     # make frustrated data
-    data = jnp.array(make_data().toarray())
+    data = jnp.array(np.loadtxt("w500"))
 
-    # Ks = [20, 100, 200, 500, 1000, 2000, 4000]
+    Ks = [20, 100, 200, 500, 1000, 2000, 4000]
     # Ks = [20, 100, 200, 500]
-    Ks = [20]
+    # Ks = [20]
 
     min_e = 0
     min_state = 0
