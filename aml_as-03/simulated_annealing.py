@@ -5,6 +5,7 @@ import hashlib
 import numpy as np
 import jax.numpy as jnp
 import jax.random as jr
+import matplotlib.pyplot as plt
 from jax import jit
 from jax import Array
 from functools import partial
@@ -50,24 +51,25 @@ def compute_acceptance(state, new_state, data, beta):
     
     return jnp.exp(-beta*(energy_calc(new_state, data)-energy_calc(state, data)))
 
-@jax.jit
-def sim_annealing(key, state, data, vec_len, R, beta, num_iterations):
+def sim_annealing(key, state:Array, data:Array, R:int, beta:float, chain_len:int):
 
     def body_fun(carry, tmp):
         state, key = carry
-        key, sample_key, prob_key = jr.split(key)
+        key, sample_key, prob_key = jr.split(key, 3)
 
         current_state = state
         neighbour_state = get_neighbour(sample_key, state, R)
         
-        a = jnp.min(1, compute_acceptance(current_state, neighbour_state, 
-                                          data, beta))
+        acc = compute_acceptance(current_state, neighbour_state, data, beta)
+        a = jnp.where(1 < acc, 1, acc)
         p = jr.uniform(prob_key)
         state = jnp.where(a > p, neighbour_state, current_state)
         return (state, key), state
     
-    _, states = jax.lax.scan(body_fun, (state,key), (), length=num_iterations)
+    _, states = jax.lax.scan(body_fun, (state,key), (), length=chain_len)
     return states
+
+jit_sim_annealing = jax.jit(sim_annealing, static_argnums=[3,5])
 
 def exp_schedule(beta, f):
     return f*beta
@@ -80,27 +82,69 @@ def main():
     # save = True
 
     vec_len = 500
-    chain_length = 1000
+    chain_length = 500
     R = 1 # neighbourhood size
 
-    data = make_data()
+    data = jnp.array(make_data().toarray())
     key = jr.PRNGKey(42)
 
+    # condition for while loops:
+    def cond_fn(var_e):
+        return var_E > 0
 
     # first, AK-schedule
-    delta_beta = 0.001
-    var_chain = 1
+    means = []
+    vars  = []
+    betas = []
+    delta_beta = 0.01
     # 1 Run MH at high temperature to estimate beta_1:
-    beta_0 = 0.00001 # start with high temp=low beta
-    key, subkey = jr.split(key)
-    states = sim_annealing(subkey, data, vec_len, R, beta_0, AK_schedule, chain_length)
+    beta_0 = 0.0001 # start with high temp=low beta
+    key, init_key, anneal_key = jr.split(key, 3)
+    state = reset(init_key, vec_len)
+    states = jit_sim_annealing(anneal_key, state, data, R, beta_0, chain_length)
 
+    energies = jax.vmap(energy_calc, (0, None))(states, data)
 
+    mean_E = jnp.mean(energies)
+    var_E = jnp.var(energies)
+    beta_1 = AK_schedule(beta_0, delta_beta, var_E)
 
-    
+    means.append(mean_E)
+    vars.append(var_E)
+    betas.append(beta_1)
 
-    
+    def ak_body_fn(args):
+        key, state, beta = args
+        key, subkey = jr.split(key)
 
+        states = jit_sim_annealing(subkey, state, data, R, beta, chain_length)
 
-    
-    return
+        energies = jax.vmap(energy_calc, (0, None))(states, data)
+
+        mean_E = jnp.mean(energies)
+        var_E  = jnp.var(energies)
+
+        states = states[-1]
+        beta   = AK_schedule(beta, delta_beta, var_E)
+
+        means.append(mean_E)
+        vars.append(var_E)
+        betas.append(beta)
+      
+        return (key, state, beta)
+
+    final_state, final_beta = jax.lax.while_loop(cond_fn, ak_body_fn, (key, states[-1], beta_1))
+
+    xs = len(means)
+
+    plt.plot(xs, means)
+    plt.show()
+    plt.plot(xs, vars)
+    plt.show()
+    plt.plot(xs, betas)
+    plt.show()
+  
+    return means, vars, betas
+
+if __name__ == "__main__":
+    means, vars, beta = main()
