@@ -101,7 +101,7 @@ def main():
 
     # first, AK-schedule
     def ak_body_fn(key, state, beta, data, R, chain_length):
-        states = jit_sim_annealing(subkey, state, data, R, beta, chain_length)
+        states = jit_sim_annealing(key, state, data, R, beta, chain_length)
         energies = jax.vmap(energy_calc, (0, None))(states, data)
         mean_E = jnp.mean(energies)
         var_E  = jnp.var(energies)
@@ -116,13 +116,8 @@ def main():
     beta_0 = 0.0001 # start with high temp=low beta
     key, init_key, anneal_key = jr.split(key, 3)
     state = reset(init_key, vec_len)
-    states = jit_sim_annealing(anneal_key, state, data, R, beta_0, chain_length)
 
-    energies = jax.vmap(energy_calc, (0, None))(states, data)
-    mean_E = jnp.mean(energies)
-    current_var = jnp.var(energies)
-    current_beta = AK_schedule(beta_0, delta_beta, current_var)
-    current_state = states[-1]
+    current_state, current_beta, mean_E, current_var = ak_body_fn(anneal_key, state, beta_0, data, R, chain_length)
 
     means.append(float(mean_E))
     vars.append(float(current_var))
@@ -136,7 +131,7 @@ def main():
 
         means.append(float(mean_E))
         vars.append(float(current_var))
-        betas.append(float(current_beta))
+        betas.append(float(current_beta))   
 
         loop_i += 1
 
