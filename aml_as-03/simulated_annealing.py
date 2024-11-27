@@ -14,6 +14,9 @@ from typing import Callable
 
 from makedata import make_data
 
+def generator(cur_var):
+    while cur_var > 0:
+        yield
 
 @partial(jit, static_argnums = 2)
 def get_neighbour(key, state, R):
@@ -77,6 +80,10 @@ def exp_schedule(beta, f):
 def AK_schedule(beta, delta_beta, chain_var):
     return beta + delta_beta/jnp.sqrt(chain_var)
 
+def ak_outer_fn():
+
+    return
+
 def main():
     save = False
     # save = True
@@ -85,18 +92,26 @@ def main():
     chain_length = 500
     R = 1 # neighbourhood size
 
-    data = jnp.array(make_data().toarray())
+    data = jnp.array(np.loadtxt("w500"))
     key = jr.PRNGKey(42)
 
     # condition for while loops:
     def cond_fn(var_e):
-        return var_E > 0
+        return var_e > 0
 
     # first, AK-schedule
-    means = []
-    vars  = []
-    betas = []
-    delta_beta = 0.01
+    def ak_body_fn(key, state, beta, data, R, chain_length):
+        states = jit_sim_annealing(subkey, state, data, R, beta, chain_length)
+        energies = jax.vmap(energy_calc, (0, None))(states, data)
+        mean_E = jnp.mean(energies)
+        var_E  = jnp.var(energies)
+        state = states[-1]
+        beta   = AK_schedule(beta, delta_beta, var_E)
+  
+        return state, beta, mean_E, var_E
+    
+    means, vars, betas = [], [], []
+    delta_beta = 0.1
     # 1 Run MH at high temperature to estimate beta_1:
     beta_0 = 0.0001 # start with high temp=low beta
     key, init_key, anneal_key = jr.split(key, 3)
@@ -104,38 +119,28 @@ def main():
     states = jit_sim_annealing(anneal_key, state, data, R, beta_0, chain_length)
 
     energies = jax.vmap(energy_calc, (0, None))(states, data)
-
     mean_E = jnp.mean(energies)
-    var_E = jnp.var(energies)
-    beta_1 = AK_schedule(beta_0, delta_beta, var_E)
+    current_var = jnp.var(energies)
+    current_beta = AK_schedule(beta_0, delta_beta, current_var)
+    current_state = states[-1]
 
-    means.append(mean_E)
-    vars.append(var_E)
-    betas.append(beta_1)
+    means.append(float(mean_E))
+    vars.append(float(current_var))
+    betas.append(float(current_beta))
 
-    def ak_body_fn(args):
-        key, state, beta = args
+    loop_i = 0
+
+    for _ in tqdm(generator(current_var)):
         key, subkey = jr.split(key)
+        current_state, current_beta, mean_E, current_var = ak_body_fn(subkey, current_state, current_beta, data, R, chain_length)
 
-        states = jit_sim_annealing(subkey, state, data, R, beta, chain_length)
+        means.append(float(mean_E))
+        vars.append(float(current_var))
+        betas.append(float(current_beta))
 
-        energies = jax.vmap(energy_calc, (0, None))(states, data)
+        loop_i += 1
 
-        mean_E = jnp.mean(energies)
-        var_E  = jnp.var(energies)
-
-        states = states[-1]
-        beta   = AK_schedule(beta, delta_beta, var_E)
-
-        means.append(mean_E)
-        vars.append(var_E)
-        betas.append(beta)
-      
-        return (key, state, beta)
-
-    final_state, final_beta = jax.lax.while_loop(cond_fn, ak_body_fn, (key, states[-1], beta_1))
-
-    xs = len(means)
+    xs = np.arange(loop_i)
 
     plt.plot(xs, means)
     plt.show()
