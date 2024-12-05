@@ -115,10 +115,38 @@ def belief_prop(w, th, n=20, eta = 0.5, max_iter = 1000, tol=1e-13):
           break
 
     m = np.tanh(th + np.sum(a, axis=0))
-    return m, i
+
+    x_mat = np.asarray([[-1,-1],
+                        [-1,1],
+                        [1,-1],
+                        [1,1]]).T
+    
+    a_term_1 = np.sum(a, axis=0)[:,np.newaxis]-a
+    a_term_2 = np.sum(a, axis=1)[:,np.newaxis]-a
+    
+    Z = a_term_1@x_mat + a_term_2@x_mat
+
+    one = w + 2*th + a_term_1 + a_term_2
+    two = -w + a_term_1*1 + a_term_2*-1
+    three = -w + a_term_1*-1 + a_term_2*1
+    four = w - 2*th - a_term_1 + a_term_2
+
+    b = np.exp([one, two, three, four])
+    b = b/np.sum(b)
+
+    xixj = np.array([1,-1,-1,1])
+    sum_xi_xj_bij = np.sum(xixj * b)
+
+    mi = np.sum(np.array([1,1,-1,-1])*b)
+    mj = np.sum(np.array([1,-1,1,-1])*b)
+
+    chi = sum_xi_xj_bij - mi*mj
+
+    return m, chi, i
 
 # Js = [0.5]
 Js = [0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0]
+Js = np.arange(0.2, 2.01, 0.2)
 # Js = np.linspace(0.1, 2, 16)
 
 mean_RMSs = [] # list for storing mean of RMS
@@ -144,12 +172,11 @@ for J in Js:
 
   print(f"Calculations for J = {J}")
 
-
   for m in tqdm(range(M)):
     th = np.random.randn(n) * J
     w, c = generate_w_matrix(J, 1, True)
     m_ex, chi_ex, p_ex = exact(w, th)
-    m_bp, i_bp = belief_prop(w, th)
+    m_bp, chi_bp, i_bp = belief_prop(w, th)
 
     Rmss.append(rms_mu(m_ex, m_bp))
     # bp_iters.append(i_bp)
@@ -164,6 +191,6 @@ mean_RMSs = np.array(mean_RMSs)
 std_RMSs = np.array(std_RMSs)
 
 plt.plot(Js, mean_RMSs, label="error bp")
-plt.fill_between(Js, mean_RMSs+std_RMSs, mean_RMSs-std_RMSs)
+plt.fill_between(Js, mean_RMSs+std_RMSs, mean_RMSs-std_RMSs, alpha=0.3)
 plt.legend()
 plt.show()
