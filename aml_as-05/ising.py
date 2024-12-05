@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 from scipy import sparse
 import itertools
 from tqdm import tqdm
@@ -8,22 +9,15 @@ def s_all(n):
     configs = list(itertools.product([-1, 1], repeat=n))
     return np.array(configs)
 
+def rms_mu(m_ex, m_approx):
+   return np.sqrt(np.mean(m_ex-m_approx)**2)
+
 # Set random seeds for reproducibility
 np.random.seed(0)
-
-# Parameters
-n = 20  # number of spins
-Jth = 0.1  # sets the size of the random threshold values th
-
-# Toggle between full and sparse Ising network
-use_full_matrix = False
-
-# Generate random thresholds
-th = np.random.randn(n) * Jth
-
-def generate_w_matrix(J=0.5, use_full_matrix=False):
+def generate_w_matrix(J=0.5, c1=0.5, use_full_matrix=False):
   """
   J = temperature
+  c1 = connectivity
   """
   if use_full_matrix:
       # Full weight matrix
@@ -35,7 +29,7 @@ def generate_w_matrix(J=0.5, use_full_matrix=False):
       c = ~(w == 0)  # neighborhood graph fully connected
   else:
       # Sparse weight matrix
-      c1 = 0.5  # connectivity is the approximate fraction of non-zero links
+      # c1 = 0.5  # connectivity is the approximate fraction of non-zero links
       k = c1 * n
       beta = 0.5
       
@@ -67,7 +61,12 @@ def generate_w_matrix(J=0.5, use_full_matrix=False):
           w = w.toarray()
   return w, c
 
-def exact(w, th, n):
+def exact(w, th, n=20):
+  """
+  w = matrix
+  th = thresholds (theta_i)
+  n  = matrix size
+  """
   # EXACT calculations
   sa = s_all(n)  # all 2^n spin configurations
   # Calculate energies for all configurations
@@ -81,28 +80,33 @@ def exact(w, th, n):
   klad = (p_ex[:, np.newaxis] * np.ones((1, n))) * sa
   chi_ex = sa.T @ klad - np.outer(m_ex, m_ex)
 
-  print("Exact magnetizations:", m_ex)
-  print("\nCorrelation matrix shape:", chi_ex.shape)
+  # print("Exact magnetizations:", m_ex)
+  # print("\nCorrelation matrix shape:", chi_ex.shape)
 
-  return m_ex, chi_ex
+  return m_ex, chi_ex, p_ex
 
 # Belief-Propagation Implementation
-def belief_prop(w, th, n=20, max_iter = 100_000, tol=1e-12):
+def belief_prop(w, th, n=20, eta = 0.5, max_iter = 1000, tol=1e-13):
     """
     w is the coupling matrix
     th is the threshold 
+    n is size of our lattice
+    eta is smoothing factor
     """
   
     # start with initial random nxn matrix a
     a = np.random.randn(n, n)
+    mij_plus  = np.ones((n,n))
+    mij_minus = np.ones((n,n))
     da = 1
 
-    for _ in tqdm(range(max_iter)):
+    print("")
+    for i in range(max_iter):
       a_old = a
     
       # update all msgs
-      mij_plus  = 2*np.cosh(w  + th + np.sum(a_old, axis=1)[:,np.newaxis]-a_old)
-      mij_minus = 2*np.cosh(-w + th + np.sum(a_old, axis=1)[:,np.newaxis]-a_old)
+      mij_plus  = eta*mij_plus + (1-eta)*2*np.cosh( w + th + np.sum(a_old, axis=1)[:,np.newaxis]-a_old)
+      mij_minus = eta*mij_minus + (1-eta)*2*np.cosh(-w + th + np.sum(a_old, axis=1)[:,np.newaxis]-a_old)
 
       a = 0.5 * np.log(mij_plus/mij_minus)
 
@@ -111,14 +115,55 @@ def belief_prop(w, th, n=20, max_iter = 100_000, tol=1e-12):
           break
 
     m = np.tanh(th + np.sum(a, axis=0))
-    return m
+    return m, i
 
-Js = [0.5]
-# Js = np.linspace(0.2, 2, 15)
+# Js = [0.5]
+Js = [0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0]
+# Js = np.linspace(0.1, 2, 16)
+
+mean_RMSs = [] # list for storing mean of RMS
+std_RMSs  = [] # list for storing std dev of RMS
+bp_iters  = []
+
+M = 20 # multiple instances
+
+# Parameters
+n = 20  # number of spins
+# Toggle between full and sparse Ising network
+use_full_matrix = False
+# Generate random thresholds
 
 for J in Js:
-  w = generate_w_matrix(J)
-  m_exs, chi_exs = exact(w, th)
-  m_ex = np.mean(m_exs)
-  chi_ex = np.mean()
-  m_bp = belief_prop(w, th)
+
+  Rmss = []
+  chi_exs = []
+  p_exs = []
+
+  m_bps = []
+  i_bps = []
+
+  print(f"Calculations for J = {J}")
+
+
+  for m in tqdm(range(M)):
+    th = np.random.randn(n) * J
+    w, c = generate_w_matrix(J, 1, True)
+    m_ex, chi_ex, p_ex = exact(w, th)
+    m_bp, i_bp = belief_prop(w, th)
+
+    Rmss.append(rms_mu(m_ex, m_bp))
+    # bp_iters.append(i_bp)
+
+  # A_bp = np.eye(n)/(1 - m_bp**2) - w
+  # chi_bp = np.linalg.inv(A_bp)
+
+  mean_RMSs.append(np.mean(Rmss))
+  std_RMSs.append(np.std(Rmss))
+
+mean_RMSs = np.array(mean_RMSs)
+std_RMSs = np.array(std_RMSs)
+
+plt.plot(Js, mean_RMSs, label="error bp")
+plt.fill_between(Js, mean_RMSs+std_RMSs, mean_RMSs-std_RMSs)
+plt.legend()
+plt.show()
