@@ -100,7 +100,6 @@ def belief_prop(w, th, n=20, eta = 0.5, max_iter = 1000, tol=1e-13):
     mij_minus = np.ones((n,n))
     da = 1
 
-    print("")
     for i in range(max_iter):
       a_old = a
     
@@ -115,17 +114,10 @@ def belief_prop(w, th, n=20, eta = 0.5, max_iter = 1000, tol=1e-13):
           break
 
     m = np.tanh(th + np.sum(a, axis=0))
-
-    x_mat = np.asarray([[-1,-1],
-                        [-1,1],
-                        [1,-1],
-                        [1,1]]).T
     
     a_term_1 = np.sum(a, axis=0)[:,np.newaxis]-a
     a_term_2 = np.sum(a, axis=1)[:,np.newaxis]-a
     
-    Z = a_term_1@x_mat + a_term_2@x_mat
-
     one = w + 2*th + a_term_1 + a_term_2
     two = -w + a_term_1*1 + a_term_2*-1
     three = -w + a_term_1*-1 + a_term_2*1
