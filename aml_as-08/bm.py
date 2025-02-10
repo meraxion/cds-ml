@@ -28,8 +28,8 @@ Define as convergence criterion that the change of the paramters of the BM is le
 Demonstrate the convergence of the BM learning rule.
 Show plot of the convergence of the likelihood over learning iterations.
 """
-@partial(jax.jit, static_argnums=(1,2,3))
-def fixed_point(key, eta:int = 0.01, max_iter:int = 10_000, eps:float = 1e-13):
+@partial(jax.jit, static_argnums=(2, 3, 4))
+def fixed_point(df, key, eta:int = 0.01, max_iter:int = 10_000, eps:float = 1e-13):
   """
   For a small BM with no hidden units, solve the fixed point equations in the mean field and linear response approximation
   parameters:
@@ -37,8 +37,6 @@ def fixed_point(key, eta:int = 0.01, max_iter:int = 10_000, eps:float = 1e-13):
   eps:float convergence criterion
   """
   key, subkey = jr.split(key)
-  df = random_small_dataset(subkey)
-  df = jax.device_put(df)
 
   emp_mean, emp_cov = data_statistics(df)
   n = df.shape[0]
@@ -62,13 +60,13 @@ def fixed_point(key, eta:int = 0.01, max_iter:int = 10_000, eps:float = 1e-13):
       w_new = w + eta*(emp_cov - cov)
       loglik = log_likelihood(df, w_new)
       converged = jnp.max(jnp.abs(w_new - w)) < eps
-      return (w_new, theta_new, m_new, converged, loglik), loglik
+      return (w_new, theta_new, m_new, converged), loglik
     def no_update():
       return (w, theta, m, done), log_likelihood(df, w)
     
     return jax.lax.cond(~done, update, no_update)
 
-  init = (w, theta, m, False, log_likelihood(df, w))
+  init = (w, theta, m, False)
   (w, theta, m, _), logliks = jax.lax.scan(body_fn, init, None, length=max_iter)
   return w, theta, logliks
 
@@ -97,7 +95,10 @@ def main():
   df, df_small = load_data(subkey)
   # Exercise 1: fixed point iteration on random data
   key, subkey = jr.split(key)
-  w_fp_iter, theta_fp_iter, logliks_fp_iter = fixed_point(subkey)
+  df = random_small_dataset(subkey)
+  df = jax.device_put(df)
+  key, subkey = jr.split(key)
+  w_fp_iter, theta_fp_iter, logliks_fp_iter = fixed_point(df, subkey)
   plot_loglik(logliks_fp_iter)
 
   # Exercise 2: exact, direct, on subset of retinal data
