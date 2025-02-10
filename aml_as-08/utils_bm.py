@@ -9,6 +9,7 @@ import jax.random as jr
 from jaxtyping import Array
 from typing import Callable
 from jax.random import PRNGKey
+from jax.scipy.special import logsumexp
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 
@@ -21,17 +22,18 @@ def data_statistics(df):
  
   return mean, cov
 
-def log_likelihood(df, weights):
+def log_likelihood(df, w):
   """
   calculates the log likelihood of a Boltzmann machine model
   """
   # calculate the energy of each sample/experiment n
-  energy = -0.5 * jnp.einsum("ij,in,jn->n", weights, df, df)
+  energy = -0.5 * jnp.einsum("ij,in,jn->n", w, df, df)
 
-  all_states = jnp.array(list(itertools.product([0,1], repeat=weights.shape[0])))
-  Z = jnp.sum(jnp.exp(-0.5 * jnp.einsum("ij,in,jn->n", weights, all_states.T, all_states.T)))
+  all_states = 2 * jnp.array(list(itertools.product([0,1], repeat=w.shape[0]))) - 1
+  all_energies = (-0.5 * jnp.einsum("ij,in,jn->n", w, all_states.T, all_states.T))
+  logZ = logsumexp(-all_energies)
 
-  return jnp.mean(energy - jnp.log(Z))
+  return jnp.mean(-energy - logZ)
 
 def random_small_dataset(key):
   """
@@ -43,8 +45,9 @@ def random_small_dataset(key):
   N = 500 # num 
   key, subkey = jr.split(key)
   df = jr.bernoulli(subkey, shape=(N, int(P.item())))
-  
-  return (1*df).T
+  df = 2*df - 1  
+
+  return df.T
 
 def load_data(key):
   """
@@ -89,6 +92,35 @@ def plot_loglik(logliks):
   x = jnp.arange(0, n)
   plt.plot(x, logliks)
 
+  plt.title("Fixed point iteration log-likelihood")
+  plt.xlabel("Iteration")
+  plt.ylabel("Log likelihood")
+
   plt.show()
 
+  return
+
+def plot_schneidmann(pred, obs):
+  # Plot observed vs. predicted rates
+  plt.figure(figsize=(10, 6))
+  plt.scatter(obs, pred, color='red')
+  # Add diagonal line
+  lims = [1e-100, 1e2]
+  plt.plot(lims, lims, 'k-')
+
+  plt.title("Exact model prediction vs. observed rates")
+  
+  # Set log scales and limits
+  plt.xscale('log')
+  plt.yscale('log')
+  plt.xlim( [1e-4, 1e2])
+  plt.ylim(lims)
+  
+  # Labels
+  plt.xlabel(r'Observed pattern rate s^{-1}')
+  plt.ylabel(r'Approximated pattern rate s^{-1}')
+  plt.legend()
+  
+  plt.tight_layout()
+  plt.show()
   return

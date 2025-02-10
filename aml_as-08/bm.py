@@ -15,9 +15,12 @@ from functools import partial
 from jaxtyping import Array
 from typing import Callable
 from jax.random import PRNGKey
+from jax.scipy.special import logsumexp
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 
-from utils_bm import data_statistics, log_likelihood, random_small_dataset, load_data, plot_loglik
+
+from utils_bm import data_statistics, log_likelihood, random_small_dataset, load_data, plot_loglik, plot_schneidmann
 # import utils_bm
 
 """
@@ -29,15 +32,13 @@ Demonstrate the convergence of the BM learning rule.
 Show plot of the convergence of the likelihood over learning iterations.
 """
 @partial(jax.jit, static_argnums=(2, 3, 4))
-def fixed_point(df, key, eta:int = 0.01, max_iter:int = 10_000, eps:float = 1e-13):
+def fixed_point(df, key, eta:int = 0.1, max_iter:int = 10_000, eps:float = 1e-13):
   """
   For a small BM with no hidden units, solve the fixed point equations in the mean field and linear response approximation
   parameters:
   max_iter: int maximum number of fixed point iterations
   eps:float convergence criterion
   """
-  key, subkey = jr.split(key)
-
   emp_mean, emp_cov = data_statistics(df)
   n = df.shape[0]
   key, subkey_1, subkey_2 = jr.split(key, 3)
@@ -78,7 +79,7 @@ def exact(df):
   """
   Finds the exact fixed point solutions through the algebraic solution
   """
-
+  df = 2*df - 1
   emp_mean, emp_cov = data_statistics(df)
   C = emp_cov - (emp_mean@emp_mean.T)
   delta = jnp.eye(len(emp_mean))
@@ -88,11 +89,26 @@ def exact(df):
 
   return w, theta
 
+def predict_pattern_rates(df, w, theta):
+  """
+  Predict spike pattern rates using the maximum entropy model.
+  """
+  df = 2*df - 1  
+  patterns = 2 * jnp.array(list(itertools.product([0,1], repeat=w.shape[0]))) - 1
+  energies = -jnp.sum(patterns * theta, axis=1) - 0.5 * jnp.einsum("ij,ni,nj->n", w, patterns, patterns)
+  
+  logZ = logsumexp(-energies)
+  log_probs = -energies - logZ
+
+  tol = 1e-6
+  observed_rates = jnp.array([jnp.mean(jnp.all(df - p.reshape(-1,1) < tol, axis=0)) for p in patterns])
+
+  return jnp.exp(log_probs), observed_rates
+
 def main():
   key = PRNGKey(754273565)
   key, subkey = jr.split(key)
 
-  df, df_small = load_data(subkey)
   # Exercise 1: fixed point iteration on random data
   key, subkey = jr.split(key)
   df = random_small_dataset(subkey)
@@ -102,8 +118,14 @@ def main():
   plot_loglik(logliks_fp_iter)
 
   # Exercise 2: exact, direct, on subset of retinal data
-  w, theta = exact(df_small)
-  
+  df_sal, df_small = load_data(subkey)
+  df_sal = jax.device_put(df_sal)
+  df_small = jax.device_put(df_small)
+
+  w_exact, theta_exact = exact(df_small)
+  pred, obs = predict_pattern_rates(df, w_exact, theta_exact)
+  plot_schneidmann(pred, obs)
+ 
   return
 
 if __name__ == "__main__":
