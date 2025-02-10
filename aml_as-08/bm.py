@@ -15,21 +15,9 @@ from jaxtyping import Array
 from typing import Callable
 from jax.random import PRNGKey
 from tqdm import tqdm
-import pandas as pd
 
-def data_statistics(df):
-  mean = jnp.mean(df, axis = 1)
-  cov  = jnp.cov(df)
- 
-  return mean, cov
-
-def log_likelihood(df, weights):
-  energy = -0.5 * jnp.einsum("ij,ni,nj->n", weights, df, df)
-
-  all_states = jnp.array(list(itertools.product([0,1], repeat=weights.shape[0])))
-  Z = jnp.sum(jnp.exp(-0.5 * jnp.einsum("ij,ni,nj->n", weights, all_states, all_states)))
-
-  return jnp.mean(energy - jnp.log(Z))
+from utils_bm import data_statistics, log_likelihood, random_small_dataset, load_data, plot_loglik
+# import utils_bm
 
 """
 Exercise 1 Description:
@@ -39,18 +27,7 @@ Define as convergence criterion that the change of the paramters of the BM is le
 Demonstrate the convergence of the BM learning rule.
 Show plot of the convergence of the likelihood over learning iterations.
 """
-
-def random_small_dataset(key):
-
-  key, subkey = jr.split(key)
-  P = jr.uniform(subkey, minval=10, maxval=21) # num spins
-  N = 500 # num 
-  key, subkey = jr.split(key)
-  df = jr.bernoulli(subkey, shape=(N, int(P.item())))
-  
-  return (1*df).T
-
-def fixed_point(key, max_iter = 10_000, eps:float = 1e-13):
+def fixed_point(key, eta:int = 0.01, max_iter:int = 10_000, eps:float = 1e-13):
   """
   For a small BM with no hidden units, solve the fixed point equations in the mean field and linear response approximation
   parameters:
@@ -60,9 +37,11 @@ def fixed_point(key, max_iter = 10_000, eps:float = 1e-13):
   key, subkey = jr.split(key)
   df = random_small_dataset(subkey)
 
+  emp_mean, emp_cov = data_statistics(df)
+
   n = df.shape[0]
   key, subkey_1, subkey_2 = jr.split(key, 3)
-  w = jr.normal(subkey_1, n,n)*0.1
+  w = jr.normal(subkey_1, n,n) * 0.1
   w = (w + w.T)/2 # symmetric
   w = w.at[jnp.diag_indices(n)].set(0) # 0 diagonal
   theta = jr.normal(subkey_2, n) * 0.01
@@ -74,16 +53,30 @@ def fixed_point(key, max_iter = 10_000, eps:float = 1e-13):
   for t in tqdm(range(max_iter)):
 
     m = jnp.tanh(jnp.einsum("ij,j->i", w, m) + theta)
+    delta = jnp.eye(len(m))
+    chi = jnp.linalg.inv(delta/(1 - jnp.pow(m, 2)) - w)
+    cov = chi + m@m.T
 
-
+    theta_new = theta + eta*(emp_mean - m)
+    w_new = w + eta*(emp_cov - cov)
 
     logliks.append(log_likelihood(df, w_new))
 
-  return
+    if jnp.max(jnp.abs(w_new - w)) < eps:
+      break
+    else:
+      w = w_new
+      theta = theta_new
 
-def exact(df, key):
+  return w, theta, logliks
+
+"""
+Exercise 2 Description:
+- Apply the exact algorithm to 10 randomly selected neurons from the 160 neurons of the salamander retina, as discussed in Schneidman et al., 2006. The original data file has dimension 160 x 283041, which are 297 repeated experiments, each of which has 953 time points. Use only one of these repeats for training the BM, i.e. your data file for training has dimension 10 x 953. Reproduce Schneidman et al. 2006 fig 2a.
+"""
+def exact(df):
   """
-  Finds the exact fixed point solutions through the algebraic solutions
+  Finds the exact fixed point solutions through the algebraic solution
   """
 
   emp_mean, emp_cov = data_statistics(df)
@@ -95,26 +88,6 @@ def exact(df, key):
 
   return w, theta
 
-def load_data():
-    # Initialize list to hold each row
-  rows = []
-
-  with open('bint.txt', 'r') as f:
-    for line in f:
-        # Parse each line into a numpy array (adjust 'sep' if needed)
-        rows.append(jnp.fromstring(line, sep=' '))
-
-  # Combine rows into a 2D array
-  df = jnp.vstack(rows)
-  print(df.shape)
-
-  print("Data loaded")
-  df = jnp.array(df)
-  # restrict the dataset to a smaller one:
-  dfs = df[0:10, 0:953]
-
-  return df, dfs
-
 def main():
   key = PRNGKey(754273565)
   key, subkey = jr.split(key)
@@ -122,11 +95,11 @@ def main():
   df, df_small = load_data()
 
   # Exercise 1: fixed point iteration on random data
+  w_fp_iter, theta_fp_iter, logliks_fp_iter = fixed_point(subkey)
+  plot_loglik(logliks_fp_iter)
 
-  # Exercise 2: Direct on subset of retinal data
-  w, theta = exact(df_small, subkey)
-
-
+  # Exercise 2: exact, direct, on subset of retinal data
+  w, theta = exact(df_small)
   
   return
 
