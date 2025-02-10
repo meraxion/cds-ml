@@ -11,6 +11,7 @@ import jax
 import itertools
 import jax.numpy as jnp
 import jax.random as jr
+from functools import partial
 from jaxtyping import Array
 from typing import Callable
 from jax.random import PRNGKey
@@ -27,6 +28,7 @@ Define as convergence criterion that the change of the paramters of the BM is le
 Demonstrate the convergence of the BM learning rule.
 Show plot of the convergence of the likelihood over learning iterations.
 """
+@partial(jax.jit, static_argnums=(1,2,3))
 def fixed_point(key, eta:int = 0.01, max_iter:int = 10_000, eps:float = 1e-13):
   """
   For a small BM with no hidden units, solve the fixed point equations in the mean field and linear response approximation
@@ -36,38 +38,38 @@ def fixed_point(key, eta:int = 0.01, max_iter:int = 10_000, eps:float = 1e-13):
   """
   key, subkey = jr.split(key)
   df = random_small_dataset(subkey)
+  df = jax.device_put(df)
 
   emp_mean, emp_cov = data_statistics(df)
-
   n = df.shape[0]
   key, subkey_1, subkey_2 = jr.split(key, 3)
-  w = jr.normal(subkey_1, n,n) * 0.1
+  w = jr.normal(subkey_1, shape=(n,n)) * 0.1
   w = (w + w.T)/2 # symmetric
   w = w.at[jnp.diag_indices(n)].set(0) # 0 diagonal
   theta = jr.normal(subkey_2, n) * 0.01
+  m = jr.normal(key, shape=(n,)) * 0.01 
+  delta = jnp.eye(len(m))
 
-  # tracking loglik for plotting
-  logliks = []
-  logliks.append(log_likelihood(df, w))
+  def body_fn(carry, _):
 
-  for t in tqdm(range(max_iter)):
+    w, theta, m, done = carry
 
-    m = jnp.tanh(jnp.einsum("ij,j->i", w, m) + theta)
-    delta = jnp.eye(len(m))
-    chi = jnp.linalg.inv(delta/(1 - jnp.pow(m, 2)) - w)
-    cov = chi + m@m.T
+    def update():
+      m_new = jnp.tanh(jnp.einsum("ij,j->i", w, m) + theta)
+      chi = jnp.linalg.inv(delta/(1 - jnp.pow(m, 2)) - w)
+      cov = chi + m@m.T
+      theta_new = theta + eta*(emp_mean - m)
+      w_new = w + eta*(emp_cov - cov)
+      loglik = log_likelihood(df, w_new)
+      converged = jnp.max(jnp.abs(w_new - w)) < eps
+      return (w_new, theta_new, m_new, converged, loglik), loglik
+    def no_update():
+      return (w, theta, m, done), log_likelihood(df, w)
+    
+    return jax.lax.cond(~done, update, no_update)
 
-    theta_new = theta + eta*(emp_mean - m)
-    w_new = w + eta*(emp_cov - cov)
-
-    logliks.append(log_likelihood(df, w_new))
-
-    if jnp.max(jnp.abs(w_new - w)) < eps:
-      break
-    else:
-      w = w_new
-      theta = theta_new
-
+  init = (w, theta, m, False, log_likelihood(df, w))
+  (w, theta, m, _), logliks = jax.lax.scan(body_fn, init, None, length=max_iter)
   return w, theta, logliks
 
 """
@@ -92,9 +94,9 @@ def main():
   key = PRNGKey(754273565)
   key, subkey = jr.split(key)
 
-  df, df_small = load_data()
-
+  df, df_small = load_data(subkey)
   # Exercise 1: fixed point iteration on random data
+  key, subkey = jr.split(key)
   w_fp_iter, theta_fp_iter, logliks_fp_iter = fixed_point(subkey)
   plot_loglik(logliks_fp_iter)
 

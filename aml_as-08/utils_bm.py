@@ -25,10 +25,11 @@ def log_likelihood(df, weights):
   """
   calculates the log likelihood of a Boltzmann machine model
   """
-  energy = -0.5 * jnp.einsum("ij,ni,nj->n", weights, df, df)
+  # calculate the energy of each sample/experiment n
+  energy = -0.5 * jnp.einsum("ij,in,jn->n", weights, df, df)
 
   all_states = jnp.array(list(itertools.product([0,1], repeat=weights.shape[0])))
-  Z = jnp.sum(jnp.exp(-0.5 * jnp.einsum("ij,ni,nj->n", weights, all_states, all_states)))
+  Z = jnp.sum(jnp.exp(-0.5 * jnp.einsum("ij,in,jn->n", weights, all_states.T, all_states.T)))
 
   return jnp.mean(energy - jnp.log(Z))
 
@@ -45,7 +46,7 @@ def random_small_dataset(key):
   
   return (1*df).T
 
-def load_data():
+def load_data(key):
   """
   loads the salamander retina data
   """
@@ -63,8 +64,22 @@ def load_data():
 
   print("Data loaded")
   df = jnp.array(df)
+
   # restrict the dataset to a smaller one:
-  dfs = df[0:10, 0:953]
+  indices = []
+  dat     = []
+  N = df.shape[0]
+  while len(dat) < 10:
+    key, subkey = jr.split(key)
+    i = jr.randint(subkey, (1,), 0, N).item()
+
+    if i in indices:
+      break
+    else:
+      dat.append(df[i, :953])
+      indices.append(i)
+        
+  dfs = jnp.vstack(dat)
 
   return df, dfs
 
