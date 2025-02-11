@@ -67,7 +67,7 @@ def exercise_2(key, df):
   return
 
 @partial(jax.jit, static_argnums=(2, 3, 4))
-def exact_learning(df, key, eta:int=0.001, max_iter:int=1_000_000,eps:float=1e-13):
+def exact_learning(df, key, eta:int=0.001, max_iter:int=100_000,eps:float=1e-13):
   """
   For a small BM with no hidden units, solve the fixed point equations exactly by calculating free statistics in each iteration and doing gradient ascent with them
   """
@@ -131,32 +131,72 @@ def predict_pattern_rates(df, w, theta):
 
   return jnp.exp(log_probs), observed_rates
 
-"""
-Exercise 3 Description:
-For larger problems, implement a Metropolis Hastings sampling method using single spin flips to estimate the free statistics in each learning step. 
-Produce a plot of the likelihood over learning iterations that compares the accuracy of your sampled gradient with the exact evaluation of the gradient for small systems.
-Investigate how many Monte Carlo samples are required so that the gradients are sufficiently accurate for the BM learning.
-Since the gradient is not exact and fluctuates from iteration to iteration, a convergence criterion is less straightforward. Propose a convergence criterion.
-"""
+def exercise_3(key):
+  """
+  Exercise 3 Description:
+  For larger problems, implement a Metropolis Hastings sampling method using single spin flips to estimate the free statistics in each learning step. 
+  Produce a plot of the likelihood over learning iterations that compares the accuracy of your sampled gradient with the exact evaluation of the gradient for small systems.
+  Investigate how many Monte Carlo samples are required so that the gradients are sufficiently accurate for the BM learning.
+  Since the gradient is not exact and fluctuates from iteration to iteration, a convergence criterion is less straightforward. Propose a convergence criterion.
+  """
+  key, subkey = jr.split(key)
+  df = random_small_dataset(subkey)
+  df = jax.device_put(df)
 
-def mcmc_sampling(key, w, theta, sig, n_samples):
+  num_samples = [10, 100, 1000, 10000]
+
+  print("Starting Metropolis Hastings and Exact Fixed Point on toy data")
+  key, subkey_exact, subkey_mh = jr.split(key, 3)
+  _, _, logliks_exact_learn_toy, conv_iter_exact_learn_toy = exact_learning(df, subkey_exact)
+
+  if conv_iter_exact_learn_toy == -1:
+    conv_iter_exact_learn_toy = logliks_exact_learn_toy.shape[0]
+    print("Convergence for exact not hit")
+  else:
+    print(f"Exact converged after {conv_iter_exact_learn_toy} iterations")
+
+  logliks = logliks_exact_learn_toy
+
+  for n_samples in num_samples:
+    _, _, logliks_mh_learn_toy, conv_iter_mh_learn_toy, avg_accept_ratio = metropolis_hastings(df, subkey_mh, n_samples=n_samples)
+
+    if conv_iter_mh_learn_toy == -1:
+      conv_iter_mh_learn_toy = logliks_mh_learn_toy.shape[0]
+      print(f"Convergence for MH at {n_samples} samples not hit, with an average acceptance ratio of {avg_accept_ratio}")
+    else:
+      print(f"MH with {n_samples} converged after {conv_iter_mh_learn_toy} iterations, with an average acceptance ratio of {avg_accept_ratio}")
+
+    conv_iter_mh = jnp.maximum(conv_iter_mh, conv_iter_mh_learn_toy)
+    logliks = jnp.stack([logliks_exact_learn_toy, logliks_mh_learn_toy])
+
+  conv_iter = max(conv_iter_exact_learn_toy, conv_iter_mh)
+  labels = ["Exact"] + [f"MH {n_samples}" for n_samples in num_samples]
+  plot_loglik_comparison(logliks, conv_iter, labels)
+
+def mcmc_sampling(key, w, theta, n_samples):
   """
   n_samples:int number of samples to take in each iteration
-  sig:float scaling of the Gaussian proposal distribution
   """
 
-  current_state = jr.choice(key, [-1,1], shape=theta.shape[0])
+  key, subkey = jr.split(key)
+  current_state = jr.choice(subkey, jnp.array([-1,1]), shape=(theta.shape[0],))
+  current_state = current_state.astype(jnp.float64)
   current_energy = -jnp.sum(current_state * theta) - 0.5*jnp.einsum("ij,i,j->", w, current_state, current_state)
 
   def body_fn(carry, _):
     key, current_state, current_energy, accepts = carry
 
     key, subkey = jr.split(key)
-    proposal = current_state + jr.normal(subkey, shape=current_state.shape)*sig
+    # select a random spin index
+    i = jr.randint(subkey, shape = (), minval=0, maxval=theta.shape[0])
+    # flip it
+    proposal = current_state.at[i].set(-current_state[i])
     proposal_energy = -jnp.sum(proposal * theta) - 0.5*jnp.einsum("ij,i,j->", w, proposal, proposal)
 
     delta_energy = proposal_energy - current_energy
-    acceptance_prob = min(1, jnp.exp(-delta_energy))
+
+    p = jnp.exp(-delta_energy)
+    acceptance_prob = jnp.where(p > 1, 1, p)
 
     key, subkey = jr.split(key)
     accepted = jr.uniform(subkey) < acceptance_prob
@@ -165,22 +205,39 @@ def mcmc_sampling(key, w, theta, sig, n_samples):
     current_energy = jnp.where(accepted, proposal_energy, current_energy)
     accepts += accepted
 
-    return (subkey, current_state, current_energy, accepts), current_state
+    return (key, current_state, current_energy, accepts), current_state
   
   init = (key, current_state, current_energy, 0)
 
-  (key, _, _, accepts), samples = jax.lax.scan(body_fn, init, jnp.arange(n_samples))
+  (key, _, _, accepts), samples = jax.lax.scan(body_fn, init, length=n_samples)
 
   mean, corr = data_statistics(samples.T)
   
   acceptance_ratio = accepts / n_samples
   return mean, corr, acceptance_ratio
 
-def metropolis_hastings(df, key, n_samples:int, sig:float = 0.01, eta:int=0.001, max_iter:int=1_000_000,eps:float=1e-13):
+def mh_convergence_check(logliks, i, window, eps):
+
+  enough_samples = i >= window
+      
+  start_idx = jnp.maximum(0, i - window)
+  recent_lls = jax.lax.dynamic_slice(logliks, (start_idx,), (window,))
+  
+  # Compute mean change in log-likelihood over window
+  changes = jnp.diff(recent_lls)
+  mean_change = jnp.abs(jnp.mean(changes))
+  # stability of changes    
+  std_change = jnp.std(changes)
+
+  # converged if mean change is small and stable
+  converged = jnp.logical_and(mean_change < eps, std_change < eps)
+  return jnp.logical_and(enough_samples, converged)
+  
+@partial(jax.jit, static_argnums=(2, 3, 4, 5))
+def metropolis_hastings(df, key, n_samples:int, eta:int=0.001, max_iter:int=100_000,eps:float=1e-4):
   """
   For a BM with no hidden units, solve the fixed point equations by computing free statistics using Metropolis Hastings sampling.
   n_samples:int number of samples to take in each iteration
-  sig:scaling of the Gaussian proposal distribution
   """
 
   emp_mean, emp_corr = data_statistics(df)
@@ -193,12 +250,17 @@ def metropolis_hastings(df, key, n_samples:int, sig:float = 0.01, eta:int=0.001,
 
   ll = log_likelihood(df, w, theta)
 
+  all_logliks = jnp.zeros(max_iter + 1)
+  all_logliks = all_logliks.at[0].set(ll)
+
   def body_fn(carry, i):
 
-    w, theta, done, conv_iter = carry
+    w, theta, done, conv_iter, logliks, avg_accept_ratio = carry
 
     def update():
-      m_new, corr_new, _ = mcmc_sampling(jr.fold_in(key, i), w, theta, sig, n_samples)
+      m_new, corr_new, accept_ratio = mcmc_sampling(jr.fold_in(key, i), w, theta, n_samples)
+
+      new_avg_acc_ratio = (i * avg_accept_ratio + accept_ratio) / (i + 1)
 
       m_new = jnp.clip(m_new, -1 + 1e-7, 1 - 1e-7)
 
@@ -206,30 +268,33 @@ def metropolis_hastings(df, key, n_samples:int, sig:float = 0.01, eta:int=0.001,
       w_new = (w_new + w_new.T)/2
       w_new = w_new.at[jnp.diag_indices(n)].set(0)
       theta_new = jnp.squeeze(theta + eta*(emp_mean - m_new))
-      loglik = log_likelihood(df, w_new, theta_new)
-      w_diff = jnp.linalg.norm(w_new - w, ord='fro')
-      converged = w_diff < eps
+      # do convergence check on the smoothed loglikelihood instead
+      loglik = log_likelihood(df, w_new, theta_new)  
+      new_logliks = logliks.at[i+1].set(loglik)
+
+      converged = mh_convergence_check(new_logliks, i, 1000, eps)
+
       new_conv_iter = jax.lax.cond(converged, 
                                     lambda: i, 
                                     lambda: conv_iter)
-      return (w_new, theta_new, converged, new_conv_iter), loglik
+      return (w_new, theta_new, converged, new_conv_iter, new_logliks, new_avg_acc_ratio), loglik
     def no_update():
-      return (w, theta, done, conv_iter), log_likelihood(df, w, theta)
+      loglik = log_likelihood(df, w, theta) 
+      new_logliks = logliks.at[i+1].set(loglik)
+      return (w, theta, done, conv_iter, new_logliks, avg_accept_ratio), loglik
     
     return jax.lax.cond(~done, update, no_update)
 
-  init = (w, theta,  False, -1)
-  (w, theta, _, conv_iter), logliks = jax.lax.scan(body_fn, init, jnp.arange(max_iter))
-  logliks = jnp.concatenate([jnp.array([ll]), logliks])
-  return w, theta, logliks, conv_iter
-
+  init = (w, theta,  False, -1, all_logliks, 0.)
+  (w, theta, _, conv_iter, all_logliks, avg_accept_ratio), _ = jax.lax.scan(body_fn, init, jnp.arange(max_iter))
+  return w, theta, all_logliks, conv_iter, avg_accept_ratio
 
 """
 Exercise 4
 Mean Field, and comparisons with exact and MH
 """
 @partial(jax.jit, static_argnums=(2, 3, 4))
-def mean_field(df, key, eta:int=0.001, max_iter:int=1_000_000,eps:float=1e-13):
+def mean_field(df, key, eta:int=0.001, max_iter:int=100_000,eps:float=1e-13):
   """
   For a BM with no hidden units, solve the fixed point equations in the mean field and linear response approximation
   parameters:
@@ -320,18 +385,7 @@ def main():
 
   # Exercise 3: Metropolis Hastings
   key, subkey = jr.split(key)
-  df = random_small_dataset(subkey)
-  df = jax.device_put(df)
-
-  print("Starting Metropolis Hastings and Exact Fixed Point on toy data")
-  key, subkey_exact, subkey_mh = jr.split(key, 3)
-  _, _, logliks_exact_learn_toy, conv_iter_exact_learn_toy = exact_learning(df, subkey_exact)
-  _, _, logliks_mh_learn_toy, conv_iter_mh_learn_toy = metropolis_hastings(df, subkey_mh, n_samples=1000)
-
-  conv_iter = max(conv_iter_exact_learn_toy, conv_iter_mh_learn_toy)
-  logliks = jnp.stack([logliks_exact_learn_toy, logliks_mh_learn_toy])
-  labels = ["Exact", "MH"]
-  plot_loglik_comparison(logliks, conv_iter, labels)
+  exercise_3(subkey)
 
   return
 

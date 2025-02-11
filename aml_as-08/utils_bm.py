@@ -123,7 +123,7 @@ def plot_loglik(logliks, i):
 
 def plot_loglik_comparison(logliks, i, labels):
 
-  x = jnp.arange(0, i+1)
+  x = jnp.arange(0, i)
 
   for j in range(logliks.shape[0]):
     plt.plot(x, logliks[j, :i+1], label=labels[j])
@@ -131,6 +131,8 @@ def plot_loglik_comparison(logliks, i, labels):
   plt.title("Log-likelihood of learning BM")
   plt.xlabel("Iteration")
   plt.ylabel("Log likelihood")
+
+  plt.legend()
 
   plt.show()
 
