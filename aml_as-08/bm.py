@@ -167,7 +167,7 @@ def exercise_3(key):
       print(f"MH with {n_samples} converged after {conv_iter_mh_learn_toy} iterations, with an average acceptance ratio of {avg_accept_ratio}")
 
     conv_iter_mh = jnp.maximum(conv_iter_mh, conv_iter_mh_learn_toy)
-    logliks = jnp.stack([logliks_exact_learn_toy, logliks_mh_learn_toy])
+    logliks = jnp.stack([logliks, logliks_mh_learn_toy])
 
   conv_iter = max(conv_iter_exact_learn_toy, conv_iter_mh)
   labels = ["Exact"] + [f"MH {n_samples}" for n_samples in num_samples]
@@ -341,6 +341,8 @@ def mean_field(df, key, eta:int=0.001, max_iter:int=100_000,eps:float=1e-13):
   (w, theta, m, _, conv_iter), logliks = jax.lax.scan(body_fn, init, jnp.arange(max_iter))
   logliks = jnp.concatenate([jnp.array([ll]), logliks])
   return w, theta, logliks, conv_iter
+
+
 """
 Exercise 5
 Big boy dataset
@@ -385,7 +387,48 @@ def main():
 
   # Exercise 3: Metropolis Hastings
   key, subkey = jr.split(key)
-  exercise_3(subkey)
+  # exercise_3(subkey)
+
+  # Exercise 4: MH vs. Mean Field vs. Exact
+  key, subkey = jr.split(key)
+  df = random_small_dataset(subkey)
+  df = jax.device_put(df)
+
+  print("Starting MH vs. Mean Field vs. Exact on toy data")
+  _, _, logliks_exact_learn_toy, conv_iter_exact_learn_toy = exact_learning(df, subkey)
+
+  if conv_iter_exact_learn_toy == -1:
+    conv_iter_exact_learn_toy = logliks_exact_learn_toy.shape[0]
+    print("Convergence not hit, plotting log likelihoods for all iterations")
+  else:
+    print(f"Converged after {conv_iter_exact_learn_toy} iterations")
+
+  n_samples=1000
+  _, _, logliks_mh_learn_toy, conv_iter_mh_learn_toy, avg_accept_ratio = metropolis_hastings(df, subkey, n_samples=n_samples)
+
+  if conv_iter_mh_learn_toy == -1:
+    conv_iter_mh_learn_toy = logliks_mh_learn_toy.shape[0]
+    print(f"Convergence for MH at {n_samples} samples not hit, with an average acceptance ratio of {avg_accept_ratio}")
+  else:
+    print(f"MH with {n_samples} converged after {conv_iter_mh_learn_toy} iterations, with an average acceptance ratio of {avg_accept_ratio}")
+
+  conv_iter = jnp.maximum(conv_iter_exact_learn_toy, conv_iter_mh_learn_toy)
+  logliks = jnp.stack([logliks_exact_learn_toy, logliks_mh_learn_toy])
+
+  _, _, logliks_mf_learn_toy, conv_iter_mf_learn_toy = mean_field(df, subkey)
+
+  if conv_iter_mf_learn_toy == -1:
+    conv_iter_mf_learn_toy = logliks_mf_learn_toy.shape[0]
+    print(f"Convergence for Mean Field not hit.")
+  else:
+    print(f"Mean Field converged after {conv_iter_mf_learn_toy} iterations.")
+
+    
+  conv_iter = jnp.maximum(conv_iter, conv_iter_mf_learn_toy)
+  logliks = jnp.stack([logliks, logliks_mf_learn_toy])
+  labels = ["Exact", "MH", "Mean Field"]
+
+  plot_loglik_comparison(logliks, conv_iter, labels)
 
   return
 
