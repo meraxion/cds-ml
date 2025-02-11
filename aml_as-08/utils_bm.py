@@ -3,6 +3,7 @@ various plotting functions etc., to make the main code file look cleaner
 """
 
 import jax
+jax.config.update("jax_enable_x64", True)
 import itertools
 import jax.numpy as jnp
 import jax.random as jr
@@ -30,7 +31,7 @@ def log_likelihood(df, w):
   energy = -0.5 * jnp.einsum("ij,in,jn->n", w, df, df)
 
   all_states = 2 * jnp.array(list(itertools.product([0,1], repeat=w.shape[0]))) - 1
-  all_energies = (-0.5 * jnp.einsum("ij,in,jn->n", w, all_states.T, all_states.T))
+  all_energies = -0.5 * jnp.einsum("ij,in,jn->n", w, all_states.T, all_states.T)
   logZ = logsumexp(-all_energies)
 
   return jnp.mean(-energy - logZ)
@@ -45,7 +46,7 @@ def random_small_dataset(key):
   N = 500 # num 
   key, subkey = jr.split(key)
   df = jr.bernoulli(subkey, shape=(N, int(P.item())))
-  df = 2*df - 1  
+  df = 2*df - 1
 
   return df.T
 
@@ -86,11 +87,11 @@ def load_data(key):
 
   return df, dfs
 
-def plot_loglik(logliks):
+def plot_loglik(logliks, i):
 
-  n = len(logliks)
+  n = len(logliks[:i+1])
   x = jnp.arange(0, n)
-  plt.plot(x, logliks)
+  plt.plot(x, logliks[:i+1])
 
   plt.title("Fixed point iteration log-likelihood")
   plt.xlabel("Iteration")
@@ -100,12 +101,12 @@ def plot_loglik(logliks):
 
   return
 
-def plot_schneidmann(pred, obs):
+def plot_schneidman(pred, obs):
   # Plot observed vs. predicted rates
   plt.figure(figsize=(10, 6))
   plt.scatter(obs, pred, color='red')
   # Add diagonal line
-  lims = [1e-100, 1e2]
+  lims = [1e-10, 1e2]
   plt.plot(lims, lims, 'k-')
 
   plt.title("Exact model prediction vs. observed rates")
@@ -117,9 +118,8 @@ def plot_schneidmann(pred, obs):
   plt.ylim(lims)
   
   # Labels
-  plt.xlabel(r'Observed pattern rate s^{-1}')
-  plt.ylabel(r'Approximated pattern rate s^{-1}')
-  plt.legend()
+  plt.xlabel(r'Observed pattern rate $s^{-1}$')
+  plt.ylabel(r'Approximated pattern rate $s^{-1}$')
   
   plt.tight_layout()
   plt.show()

@@ -8,9 +8,10 @@ Pseudocode:
   6. w_ij := w_ij + eta(<s_is_j>_c - <s_is_j>)
 """
 import jax
-import itertools
+jax.config.update("jax_enable_x64", True)
 import jax.numpy as jnp
 import jax.random as jr
+import itertools
 from functools import partial
 from jaxtyping import Array
 from typing import Callable
@@ -19,8 +20,7 @@ from jax.scipy.special import logsumexp
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 
-
-from utils_bm import data_statistics, log_likelihood, random_small_dataset, load_data, plot_loglik, plot_schneidmann
+from utils_bm import data_statistics, log_likelihood, random_small_dataset, load_data, plot_loglik, plot_schneidman
 # import utils_bm
 
 """
@@ -32,7 +32,7 @@ Demonstrate the convergence of the BM learning rule.
 Show plot of the convergence of the likelihood over learning iterations.
 """
 @partial(jax.jit, static_argnums=(2, 3, 4))
-def fixed_point(df, key, eta:int = 0.1, max_iter:int = 10_000, eps:float = 1e-13):
+def fixed_point(df, key, eta:int = 0.05, max_iter:int = 1_000, eps:float = 1e-13):
   """
   For a small BM with no hidden units, solve the fixed point equations in the mean field and linear response approximation
   parameters:
@@ -46,12 +46,14 @@ def fixed_point(df, key, eta:int = 0.1, max_iter:int = 10_000, eps:float = 1e-13
   w = (w + w.T)/2 # symmetric
   w = w.at[jnp.diag_indices(n)].set(0) # 0 diagonal
   theta = jr.normal(subkey_2, n) * 0.01
-  m = jr.normal(key, shape=(n,)) * 0.01 
+  m = emp_mean 
   delta = jnp.eye(len(m))
 
-  def body_fn(carry, _):
+  ll = log_likelihood(df, w)
 
-    w, theta, m, done = carry
+  def body_fn(carry, i):
+
+    w, theta, m, done, conv_iter = carry
 
     def update():
       m_new = jnp.tanh(jnp.einsum("ij,j->i", w, m) + theta)
@@ -59,17 +61,23 @@ def fixed_point(df, key, eta:int = 0.1, max_iter:int = 10_000, eps:float = 1e-13
       cov = chi + m@m.T
       theta_new = theta + eta*(emp_mean - m)
       w_new = w + eta*(emp_cov - cov)
+      w_new = (w_new + w_new.T)/2
+      w_new = w_new.at[jnp.diag_indices(n)].set(0)
       loglik = log_likelihood(df, w_new)
       converged = jnp.max(jnp.abs(w_new - w)) < eps
-      return (w_new, theta_new, m_new, converged), loglik
+      new_conv_iter = jax.lax.cond(converged, 
+                                    lambda: i, 
+                                    lambda: conv_iter)
+      return (w_new, theta_new, m_new, converged, new_conv_iter), loglik
     def no_update():
-      return (w, theta, m, done), log_likelihood(df, w)
+      return (w, theta, m, done, conv_iter), log_likelihood(df, w)
     
     return jax.lax.cond(~done, update, no_update)
 
-  init = (w, theta, m, False)
-  (w, theta, m, _), logliks = jax.lax.scan(body_fn, init, None, length=max_iter)
-  return w, theta, logliks
+  init = (w, theta, m, False, -1)
+  (w, theta, m, _, conv_iter), logliks = jax.lax.scan(body_fn, init, jnp.arange(max_iter))
+  logliks = jnp.concatenate([jnp.array([ll]), logliks])
+  return w, theta, logliks, conv_iter
 
 """
 Exercise 2 Description:
@@ -79,13 +87,12 @@ def exact(df):
   """
   Finds the exact fixed point solutions through the algebraic solution
   """
-  df = 2*df - 1
   emp_mean, emp_cov = data_statistics(df)
-  C = emp_cov - (emp_mean@emp_mean.T)
-  delta = jnp.eye(len(emp_mean))
+  # including epsilon here already to avoid numerical issues
+  C = emp_cov - (emp_mean@emp_mean.T) + 1e-6 * jnp.eye(len(emp_mean))
 
-  w     = delta/(1-jnp.pow(emp_mean, 2)) - jnp.linalg.inv(C)
-  theta = jnp.arctanh(emp_mean) - w@emp_mean.T
+  w     = jnp.diag(1/(1-jnp.pow(emp_mean, 2))) - jnp.linalg.inv(C)
+  theta = jnp.arctanh(emp_mean) - (w@emp_mean)
 
   return w, theta
 
@@ -93,20 +100,27 @@ def predict_pattern_rates(df, w, theta):
   """
   Predict spike pattern rates using the maximum entropy model.
   """
-  df = 2*df - 1  
-  patterns = 2 * jnp.array(list(itertools.product([0,1], repeat=w.shape[0]))) - 1
-  energies = -jnp.sum(patterns * theta, axis=1) - 0.5 * jnp.einsum("ij,ni,nj->n", w, patterns, patterns)
+  w = w.astype(jnp.float64)
+  theta = theta.astype(jnp.float64)
+
+  patterns = 2 * jnp.array(list(itertools.product([0,1], repeat=w.shape[0])), dtype=jnp.float64) - 1
+  energies = -jnp.sum(patterns * theta, axis=1) - 0.5 * jnp.einsum("ij,in,in->n", w, patterns.T, patterns.T, precision=jax.lax.Precision.HIGHEST)
+  # energies = jnp.clip(energies, -10000, 10000)
   
   logZ = logsumexp(-energies)
   log_probs = -energies - logZ
 
   tol = 1e-6
-  observed_rates = jnp.array([jnp.mean(jnp.all(df - p.reshape(-1,1) < tol, axis=0)) for p in patterns])
+  observed_counts = jnp.array([
+      jnp.sum(jnp.all(jnp.abs(df - p.reshape(-1,1)) < tol, axis=0))
+      for p in patterns
+    ])
+  observed_rates = observed_counts / jnp.sum(observed_counts) 
 
   return jnp.exp(log_probs), observed_rates
 
 def main():
-  key = PRNGKey(754273565)
+  key = PRNGKey(54267852)
   key, subkey = jr.split(key)
 
   # Exercise 1: fixed point iteration on random data
@@ -114,17 +128,16 @@ def main():
   df = random_small_dataset(subkey)
   df = jax.device_put(df)
   key, subkey = jr.split(key)
-  w_fp_iter, theta_fp_iter, logliks_fp_iter = fixed_point(df, subkey)
-  plot_loglik(logliks_fp_iter)
+  w_fp_iter, theta_fp_iter, logliks_fp_iter, conv_iter = fixed_point(df, subkey)
+  plot_loglik(logliks_fp_iter, conv_iter)
 
   # Exercise 2: exact, direct, on subset of retinal data
   df_sal, df_small = load_data(subkey)
-  df_sal = jax.device_put(df_sal)
-  df_small = jax.device_put(df_small)
-
+  df_sal = 2*df_sal - 1
+  df_small = 2*df_small - 1
   w_exact, theta_exact = exact(df_small)
-  pred, obs = predict_pattern_rates(df, w_exact, theta_exact)
-  plot_schneidmann(pred, obs)
+  pred, obs = predict_pattern_rates(df_small, w_exact, theta_exact)
+  plot_schneidman(pred, obs)
  
   return
 
