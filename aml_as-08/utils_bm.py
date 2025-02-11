@@ -37,7 +37,7 @@ def log_likelihood(df, w, theta):
   all_energies = lr - 0.5 * jnp.einsum("ij,ni,nj->n", w, patterns, patterns, precision=jax.lax.Precision.HIGHEST)
   logZ = logsumexp(-all_energies)
 
-  return jnp.mean(-energy - logZ)
+  return jnp.sum(-energy - logZ)
 
 def random_small_dataset(key):
   """

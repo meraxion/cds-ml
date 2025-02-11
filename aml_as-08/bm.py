@@ -50,7 +50,7 @@ def model_statistics(w, theta):
   return mean, cov
 
 @partial(jax.jit, static_argnums=(2, 3, 4))
-def exact_learning(df, key, eta:int=0.001, max_iter:int=100_000,eps:float=1e-13):
+def exact_learning(df, key, eta:int=0.001, max_iter:int=100_000,eps:float=1e-10):
   """
   For a small BM with no hidden units, solve the fixed point equations exactly by calculating free statistics in each iteration and doing gradient ascent with them
   """
@@ -199,6 +199,10 @@ def main():
   print("Starting Exact Fixed Point on toy data")
   key, subkey = jr.split(key)
   w_exact_learn_toy, theta_exact_learn_toy, logliks_exact_learn_toy, conv_iter_exact_learn_toy = exact_learning(df, subkey)
+  if conv_iter_exact_learn_toy == -1:
+    conv_iter_exact_learn_toy = logliks_exact_learn_toy.shape[0]
+    print("Convergence not hit, printing log likelihoods for all iterations")
+
   plot_loglik(logliks_exact_learn_toy, conv_iter_exact_learn_toy)
 
   # Exercise 2: exact fixed point on subset of retinal data
