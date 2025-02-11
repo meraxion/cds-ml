@@ -19,9 +19,26 @@ def data_statistics(df):
   calculates the empirical statistics of a dataset df
   """
   mean = jnp.mean(df, axis = 1)
-  cov  = jnp.cov(df)
+  corr  = jnp.corrcoef(df)
  
-  return mean, cov
+  return mean, corr
+
+def model_statistics(w, theta):
+
+  n = len(theta)
+  patterns = 2 * jnp.array(list(itertools.product([0,1], repeat=n))) - 1
+
+  logZ = logsumexp(-0.5 * jnp.einsum("ij,ni,nj->n", w, patterns, patterns, precision=jax.lax.Precision.HIGHEST))
+
+  energies = -0.5*jnp.einsum("ij,ni,nj->n", w, patterns,patterns)
+  lr = -jnp.sum(patterns * jnp.squeeze(theta), axis=1)
+  logprobs = - energies - lr - logZ
+  probs = jnp.exp(logprobs)
+
+  mean = jnp.sum(patterns * probs[:, None], axis=0)
+  correlations = jnp.einsum('ni,nj,n->ij', patterns, patterns, probs)  
+  
+  return mean, correlations
 
 def log_likelihood(df, w, theta):
   """
@@ -109,7 +126,7 @@ def plot_schneidman(pred, obs):
   plt.figure(figsize=(10, 6))
   plt.scatter(obs, pred, color='red')
   # Add diagonal line
-  lims = [1e-50, 1e2]
+  lims = [1e-1000, 1e2]
   plt.plot(lims, lims, 'k-')
 
   plt.title("Exact model prediction vs. observed rates")
