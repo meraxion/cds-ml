@@ -23,15 +23,18 @@ def data_statistics(df):
  
   return mean, cov
 
-def log_likelihood(df, w):
+def log_likelihood(df, w, theta):
   """
   calculates the log likelihood of a Boltzmann machine model
   """
   # calculate the energy of each sample/experiment n
-  energy = -0.5 * jnp.einsum("ij,in,jn->n", w, df, df)
+  
+  energy = -jnp.sum(df.T * theta, axis=1) -0.5*jnp.einsum("ij,in,jn->n", w, df, df)
 
-  all_states = 2 * jnp.array(list(itertools.product([0,1], repeat=w.shape[0]))) - 1
-  all_energies = -0.5 * jnp.einsum("ij,in,jn->n", w, all_states.T, all_states.T)
+  patterns = 2 * jnp.array(list(itertools.product([0,1], repeat=w.shape[0]))) - 1
+  lr = -jnp.sum(patterns * jnp.squeeze(theta), axis=1)
+
+  all_energies = lr - 0.5 * jnp.einsum("ij,ni,nj->n", w, patterns, patterns, precision=jax.lax.Precision.HIGHEST)
   logZ = logsumexp(-all_energies)
 
   return jnp.mean(-energy - logZ)
@@ -43,7 +46,7 @@ def random_small_dataset(key):
 
   key, subkey = jr.split(key)
   P = jr.uniform(subkey, minval=10, maxval=21) # num spins
-  N = 500 # num 
+  N = 1000 # num 
   key, subkey = jr.split(key)
   df = jr.bernoulli(subkey, shape=(N, int(P.item())))
   df = 2*df - 1
@@ -106,7 +109,7 @@ def plot_schneidman(pred, obs):
   plt.figure(figsize=(10, 6))
   plt.scatter(obs, pred, color='red')
   # Add diagonal line
-  lims = [1e-10, 1e2]
+  lims = [1e-50, 1e2]
   plt.plot(lims, lims, 'k-')
 
   plt.title("Exact model prediction vs. observed rates")
