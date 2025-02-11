@@ -40,6 +40,7 @@ def model_statistics(w, theta):
   
   return mean, correlations
 
+
 def log_likelihood(df, w, theta):
   """
   calculates the log likelihood of a Boltzmann machine model
@@ -62,7 +63,7 @@ def random_small_dataset(key):
   """
 
   key, subkey = jr.split(key)
-  P = jr.uniform(subkey, minval=10, maxval=16) # num spins
+  P = jr.uniform(subkey, minval=10, maxval=14) # num spins
   N = 1000 # num 
   key, subkey = jr.split(key)
   df = jr.bernoulli(subkey, shape=(N, int(P.item())))
@@ -109,9 +110,8 @@ def load_data(key):
 
 def plot_loglik(logliks, i):
 
-  n = len(logliks[:i])
-  x = jnp.arange(0, n)
-  plt.plot(x, logliks[:i])
+  x = jnp.arange(0, i+1)
+  plt.plot(x, logliks[:i+1])
 
   plt.title("Fixed point iteration log-likelihood")
   plt.xlabel("Iteration")
@@ -121,12 +121,25 @@ def plot_loglik(logliks, i):
 
   return
 
+def plot_loglik_comparison(logliks, i, labels):
+
+  x = jnp.arange(0, i+1)
+
+  for j in range(logliks.shape[0]):
+    plt.plot(x, logliks[j, :i+1], label=labels[j])
+
+  plt.title("Log-likelihood of learning BM")
+  plt.xlabel("Iteration")
+  plt.ylabel("Log likelihood")
+
+  plt.show()
+
 def plot_schneidman(pred, obs):
   # Plot observed vs. predicted rates
   plt.figure(figsize=(10, 6))
   plt.scatter(obs, pred, color='red')
   # Add diagonal line
-  lims = [1e-1000, 1e2]
+  lims = [1e-10, 1e2]
   plt.plot(lims, lims, 'k-')
 
   plt.title("Exact model prediction vs. observed rates")
