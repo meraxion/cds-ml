@@ -62,7 +62,7 @@ def random_small_dataset(key):
   """
 
   key, subkey = jr.split(key)
-  P = jr.uniform(subkey, minval=10, maxval=21) # num spins
+  P = jr.uniform(subkey, minval=10, maxval=16) # num spins
   N = 1000 # num 
   key, subkey = jr.split(key)
   df = jr.bernoulli(subkey, shape=(N, int(P.item())))

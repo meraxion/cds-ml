@@ -50,7 +50,7 @@ def exercise_1(key):
   return
 
 @partial(jax.jit, static_argnums=(2, 3, 4))
-def exact_learning(df, key, eta:int=0.0001, max_iter:int=100_000,eps:float=1e-13):
+def exact_learning(df, key, eta:int=0.001, max_iter:int=100_000,eps:float=1e-13):
   """
   For a small BM with no hidden units, solve the fixed point equations exactly by calculating free statistics in each iteration and doing gradient ascent with them
   """
