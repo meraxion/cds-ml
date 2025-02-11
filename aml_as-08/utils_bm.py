@@ -92,9 +92,9 @@ def load_data(key):
 
 def plot_loglik(logliks, i):
 
-  n = len(logliks[:i+1])
+  n = len(logliks[:i])
   x = jnp.arange(0, n)
-  plt.plot(x, logliks[:i+1])
+  plt.plot(x, logliks[:i])
 
   plt.title("Fixed point iteration log-likelihood")
   plt.xlabel("Iteration")

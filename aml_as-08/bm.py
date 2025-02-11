@@ -36,10 +36,11 @@ def model_statistics(w, theta):
   n = len(theta)
   patterns = 2 * jnp.array(list(itertools.product([0,1], repeat=n))) - 1
 
-  lr = -jnp.sum(patterns * jnp.squeeze(theta), axis=1)
-  logZ = lr - logsumexp(-0.5 * jnp.einsum("ij,ni,nj->n", w, patterns, patterns, precision=jax.lax.Precision.HIGHEST))
+  logZ = logsumexp(-0.5 * jnp.einsum("ij,ni,nj->n", w, patterns, patterns, precision=jax.lax.Precision.HIGHEST))
 
-  logprobs = -0.5*jnp.einsum("ij,ni,nj->n", w, patterns,patterns)-lr - logZ
+  energies = -0.5*jnp.einsum("ij,ni,nj->n", w, patterns,patterns)
+  lr = -jnp.sum(patterns * jnp.squeeze(theta), axis=1)
+  logprobs = - energies - lr - logZ
   probs = jnp.exp(logprobs)
 
   mean = jnp.sum(patterns * probs[:, None], axis=0)
@@ -49,18 +50,17 @@ def model_statistics(w, theta):
   return mean, cov
 
 @partial(jax.jit, static_argnums=(2, 3, 4))
-def exact_learning(df, key, eta:int=0.05, max_iter:int=100_000, eps:float=1e-13):
+def exact_learning(df, key, eta:int=0.001, max_iter:int=100_000,eps:float=1e-13):
   """
   For a small BM with no hidden units, solve the fixed point equations exactly by calculating free statistics in each iteration and doing gradient ascent with them
   """
   emp_mean, emp_cov = data_statistics(df)
   n = df.shape[0]
-  key, subkey_1, subkey_2, subkey_3 = jr.split(key, 4)
-  w = jr.normal(subkey_1, shape=(n,n)) * 0.1
+  key, subkey_1, subkey_2 = jr.split(key, 3)
+  w = jr.normal(subkey_1, shape=(n,n)) * 0.001
   w = (w + w.T)/2 # symmetric
   w = w.at[jnp.diag_indices(n)].set(0) # 0 diagonal
-  theta = jnp.squeeze(jr.normal(subkey_2, n) * 0.01)
-  m = jr.normal(subkey_3, n) * 0.01
+  theta = jnp.squeeze(jr.normal(subkey_2, n) * 0.001)
 
   ll = log_likelihood(df, w, theta)
   
@@ -70,13 +70,17 @@ def exact_learning(df, key, eta:int=0.05, max_iter:int=100_000, eps:float=1e-13)
 
     def update():
       m_new, cov_new = model_statistics(w, theta)
+      m_new = jnp.clip(m_new, -1 + 1e-7, 1 - 1e-7)
+      cov_new = jnp.clip(cov_new, -1 + 1e-7, 1 - 1e-7)
 
       w_new = w + eta*(emp_cov - cov_new)
       w_new = (w_new + w_new.T)/2
       w_new = w_new.at[jnp.diag_indices(n)].set(0)
       theta_new = jnp.squeeze(theta + eta*(emp_mean - m_new))
       loglik = log_likelihood(df, w_new, theta_new)
-      converged = (jnp.max(jnp.abs(w_new - w)) < eps) & (jnp.max(jnp.abs(theta_new - theta)) < eps)
+      converged = (jnp.max(jnp.abs(w_new - w)) < eps)
+      w_diff = jnp.linalg.norm(w_new - w, ord='fro')
+      converged = w_diff < eps
       new_conv_iter = jax.lax.cond(converged, 
                                     lambda: i, 
                                     lambda: conv_iter)
